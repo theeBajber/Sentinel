@@ -132,6 +132,35 @@ export default function Dashboard() {
     }
   };
 
+  function getRelativeTime(dateString: string) {
+    const now = new Date();
+    const past = new Date(dateString);
+
+    const diff = (past.getTime() - now.getTime()) / 1000; // seconds
+
+    const rtf = new Intl.RelativeTimeFormat("en", { numeric: "auto" });
+
+    const intervals = [
+      { label: "year", seconds: 31536000 },
+      { label: "month", seconds: 2592000 },
+      { label: "day", seconds: 86400 },
+      { label: "hour", seconds: 3600 },
+      { label: "minute", seconds: 60 },
+      { label: "second", seconds: 1 },
+    ];
+
+    for (const { label, seconds } of intervals) {
+      const value = diff / seconds;
+      if (Math.abs(value) >= 1) {
+        return rtf.format(
+          Math.round(value),
+          label as Intl.RelativeTimeFormatUnit,
+        );
+      }
+    }
+
+    return "just now";
+  }
   const formatLog = (log: Log) => {
     const url = new URL(log.url);
     return {
@@ -145,12 +174,9 @@ export default function Dashboard() {
             ? "Suspicious"
             : "URL",
       status: log.verdict,
-      time: new Date(log.createdAt).toRelativeTime
-        ? new Date(log.createdAt).toRelativeTime()
-        : new Date(log.createdAt).toLocaleTimeString([], {
-            hour: "2-digit",
-            minute: "2-digit",
-          }),
+
+      // ✅ FIXED LINE
+      time: getRelativeTime(log.createdAt),
     };
   };
 
