@@ -1,0 +1,52 @@
+// prisma/schema.prisma
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model AdminUser {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  password  String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model ThreatEntry {
+  id          String   @id @default(cuid())
+  pattern     String
+  isRegex     Boolean  @default(false)
+  severity    String
+  source      String
+  notes       String?
+  category    String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  @@index([pattern])
+}
+
+model DetectionLog {
+  id               String   @id @default(cuid())
+  url              String
+  domain           String?
+  verdict          String
+  score            Int
+  reasons          String
+  matchedThreatIds String?
+  threatType       String?
+  confidence       Int?
+  clientIp         String?
+  userAgent        String?
+  source           String   @default("extension")
+  tabId            Int?
+  createdAt        DateTime @default(now())
+  
+  @@index([createdAt])
+  @@index([verdict])
+  @@index([domain])
+}

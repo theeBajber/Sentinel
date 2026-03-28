@@ -1,0 +1,29 @@
+{
+  "manifest_version": 2,
+  "name": "SentinelPhish",
+  "version": "1.0.0",
+  "description": "Real-time phishing protection",
+  "permissions": [
+    "activeTab",
+    "tabs",
+    "webNavigation",
+    "storage",
+    "contextMenus",
+    "notifications",
+    "<all_urls>"
+  ],
+  "background": {
+    "scripts": ["background.js"],
+    "persistent": true
+  },
+  "browser_action": {
+    "default_title": "SentinelPhish",
+    "default_popup": "popup.html"
+  },
+  "icons": {
+    "16": "icons/icon16.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  },
+  "web_accessible_resources": ["blocked.html"]
+}

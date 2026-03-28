@@ -1,0 +1,279 @@
+<!-- extension/blocked.html -->
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Site Blocked - SentinelPhish</title>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+      body {
+        font-family:
+          -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        background: #020617;
+        color: #f8fafc;
+        min-height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 20px;
+      }
+      .container {
+        max-width: 480px;
+        width: 100%;
+        text-align: center;
+      }
+      .icon {
+        width: 80px;
+        height: 80px;
+        background: rgba(239, 68, 68, 0.2);
+        border-radius: 24px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto 24px;
+      }
+      .icon svg {
+        width: 40px;
+        height: 40px;
+        color: #f87171;
+      }
+      .badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        background: rgba(239, 68, 68, 0.2);
+        color: #f87171;
+        padding: 8px 16px;
+        border-radius: 8px;
+        font-size: 12px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        margin-bottom: 16px;
+      }
+      h1 {
+        font-size: 32px;
+        font-weight: 700;
+        margin-bottom: 8px;
+        line-height: 1.2;
+      }
+      h1 span {
+        color: #f87171;
+      }
+      .description {
+        color: #94a3b8;
+        margin-bottom: 32px;
+        line-height: 1.6;
+      }
+      .details {
+        background: rgba(30, 41, 59, 0.5);
+        border: 1px solid rgba(239, 68, 68, 0.2);
+        border-radius: 16px;
+        padding: 24px;
+        text-align: left;
+        margin-bottom: 24px;
+      }
+      .details h3 {
+        font-size: 16px;
+        margin-bottom: 12px;
+      }
+      .details code {
+        background: #0f172a;
+        padding: 4px 8px;
+        border-radius: 4px;
+        font-family: monospace;
+        color: #f87171;
+        word-break: break-all;
+      }
+      .stats {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 16px;
+        margin-top: 16px;
+      }
+      .stat {
+        background: rgba(15, 23, 42, 0.5);
+        padding: 12px;
+        border-radius: 8px;
+      }
+      .stat-label {
+        font-size: 11px;
+        text-transform: uppercase;
+        color: #64748b;
+        margin-bottom: 4px;
+      }
+      .stat-value {
+        font-size: 16px;
+        font-weight: 600;
+      }
+      .stat-value.danger {
+        color: #f87171;
+      }
+      .buttons {
+        display: flex;
+        gap: 12px;
+      }
+      button {
+        flex: 1;
+        padding: 14px 24px;
+        border-radius: 12px;
+        border: none;
+        font-size: 14px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s;
+      }
+      .btn-primary {
+        background: linear-gradient(135deg, #3b82f6, #2563eb);
+        color: white;
+      }
+      .btn-primary:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 20px rgba(59, 130, 246, 0.3);
+      }
+      .btn-secondary {
+        background: rgba(30, 41, 59, 0.5);
+        color: #94a3b8;
+        border: 1px solid #334155;
+      }
+      .btn-secondary:hover {
+        background: rgba(51, 65, 85, 0.5);
+        color: white;
+      }
+      .reasons {
+        margin-top: 12px;
+        font-size: 13px;
+        color: #94a3b8;
+      }
+      .reasons li {
+        margin: 4px 0;
+        padding-left: 16px;
+        position: relative;
+      }
+      .reasons li::before {
+        content: "•";
+        position: absolute;
+        left: 4px;
+        color: #f87171;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <div class="icon">
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+        >
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="2"
+            d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"
+          />
+        </svg>
+      </div>
+
+      <div class="badge">
+        <svg
+          width="16"
+          height="16"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+        >
+          <path
+            d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+          />
+        </svg>
+        Security Threat Detected
+      </div>
+
+      <h1>Dangerous Site<br /><span>Blocked</span></h1>
+
+      <p class="description">
+        Our real-time heuristic engine identified this as a high-risk phishing
+        vector. Attackers may attempt to steal your personal information.
+      </p>
+
+      <div class="details">
+        <h3>Why was this blocked?</h3>
+        <p>URL: <code id="url">loading...</code></p>
+
+        <div class="stats">
+          <div class="stat">
+            <div class="stat-label">Threat Type</div>
+            <div class="stat-value">Credential Harvester</div>
+          </div>
+          <div class="stat">
+            <div class="stat-label">Confidence</div>
+            <div class="stat-value danger" id="score">--</div>
+          </div>
+        </div>
+
+        <ul class="reasons" id="reasons"></ul>
+      </div>
+
+      <div class="buttons">
+        <button class="btn-primary" onclick="goBack()">
+          <svg
+            width="16"
+            height="16"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            style="
+              display: inline-block;
+              vertical-align: middle;
+              margin-right: 8px;
+            "
+          >
+            <path d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+          </svg>
+          Go Back to Safety
+        </button>
+        <button class="btn-secondary" onclick="proceed()">
+          Proceed Anyway
+        </button>
+      </div>
+    </div>
+
+    <script>
+      const params = new URLSearchParams(window.location.search);
+      const url = params.get("u") || "Unknown URL";
+      const score = params.get("score") || "0";
+      const reasons = params.get("reasons")
+        ? JSON.parse(decodeURIComponent(params.get("reasons")))
+        : [];
+
+      document.getElementById("url").textContent = new URL(url).hostname;
+      document.getElementById("score").textContent = score + "% Critical";
+
+      const reasonsList = document.getElementById("reasons");
+      reasons.forEach((r) => {
+        const li = document.createElement("li");
+        li.textContent = r;
+        reasonsList.appendChild(li);
+      });
+
+      function goBack() {
+        window.history.back();
+      }
+
+      function proceed() {
+        if (confirm("Are you sure? This site may be dangerous.")) {
+          window.location.href = url;
+        }
+      }
+    </script>
+  </body>
+</html>
