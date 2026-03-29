@@ -1,23 +1,43 @@
-// app/threats/page.tsx
 "use client";
 
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { Search, Trash2, Clock } from "lucide-react";
+import { RefreshCw, Trash2 } from "lucide-react";
 
 interface Threat {
   id: string;
   pattern: string;
   severity: "low" | "medium" | "high" | "critical";
   source: string;
-  createdAt: string;
+  notes: string | null;
   isRegex: boolean;
+  category: string | null;
+  createdAt: string;
 }
+
+const COLORS = {
+  bgPrimary: "#0c1324",
+  bgCard: "#191f31",
+  bgHover: "#1c2337",
+  accentBlue: "#b7c4ff",
+  accentRose: "#ffb4ab",
+  accentAmber: "#dec29a",
+  textPrimary: "#dce1fb",
+  textMuted: "#c6c6cd",
+  danger: "#f2a7a0",
+  warning: "#e6c38a",
+  success: "#8fd4b2",
+};
 
 export default function Threats() {
   const [threats, setThreats] = useState<Threat[]>([]);
-  const [filter, setFilter] = useState("all");
-  const [search, setSearch] = useState("");
+  const [loading, setLoading] = useState(true);
+  const [formData, setFormData] = useState({
+    pattern: "",
+    isRegex: false,
+    severity: "high" as Threat["severity"],
+    notes: "",
+  });
 
   useEffect(() => {
     fetchThreats();
@@ -25,139 +45,339 @@ export default function Threats() {
 
   const fetchThreats = async () => {
     try {
-      const res = await fetch("/api/threats", {
-        headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
-      });
+      setLoading(true);
+      const res = await fetch("/api/threats");
       if (res.ok) {
         const data = await res.json();
         setThreats(data);
       }
     } catch (error) {
       console.error("Failed to fetch threats:", error);
+    } finally {
+      setLoading(false);
     }
   };
 
-  const getSeverityColor = (severity: string) => {
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!formData.pattern.trim()) return;
+
+    try {
+      const res = await fetch("/api/threats", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          ...formData,
+          source: "manual",
+        }),
+      });
+
+      if (res.ok) {
+        setFormData({
+          pattern: "",
+          isRegex: false,
+          severity: "high",
+          notes: "",
+        });
+        fetchThreats();
+      }
+    } catch (error) {
+      console.error("Failed to add threat:", error);
+    }
+  };
+
+  const handleDelete = async (id: string) => {
+    if (!confirm("Delete this threat pattern?")) return;
+
+    try {
+      const res = await fetch(`/api/threats?id=${id}`, {
+        method: "DELETE",
+      });
+
+      if (res.ok) {
+        fetchThreats();
+      }
+    } catch (error) {
+      console.error("Failed to delete threat:", error);
+    }
+  };
+
+  const getSeverityStyle = (severity: string) => {
     switch (severity) {
       case "critical":
-        return "bg-red-500/20 text-red-400 border-red-500/30";
+        return { bg: "#5c1a1a", text: "#ffb4ab", border: "#7f2a2a" };
       case "high":
-        return "bg-orange-500/20 text-orange-400 border-orange-500/30";
+        return { bg: "#4a1c1c", text: "#f2a7a0", border: "#5c2a2a" };
       case "medium":
-        return "bg-amber-500/20 text-amber-400 border-amber-500/30";
+        return { bg: "#3d2d1a", text: "#dec29a", border: "#5c4528" };
       default:
-        return "bg-blue-500/20 text-blue-400 border-blue-500/30";
+        return { bg: "#1c2337", text: "#b7c4ff", border: "#2a3a5c" };
     }
   };
 
-  const filteredThreats = threats.filter((t) => {
-    if (filter !== "all" && t.severity !== filter) return false;
-    if (search && !t.pattern.toLowerCase().includes(search.toLowerCase()))
-      return false;
-    return true;
-  });
-
   return (
-    <main className="p-6">
-      <h1 className="mb-2 text-3xl font-bold text-white">Active Threats</h1>
-      <p className="mb-6 text-sm text-slate-400">Surveillance Module</p>
-
-      <div className="relative mb-4">
-        <Search className="absolute left-4 top-3.5 h-5 w-5 text-slate-500" />
-        <input
-          type="text"
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          placeholder="Filter by URL, File or Hash..."
-          className="w-full rounded-xl border border-slate-700 bg-slate-800/50 py-3 pl-12 pr-4 text-white placeholder-slate-500 focus:border-blue-500 focus:outline-none"
-        />
+    <main
+      className="min-h-screen w-full p-6"
+      style={{ backgroundColor: COLORS.bgPrimary }}
+    >
+      {/* Header */}
+      <div className="mb-8">
+        <p
+          className="text-xs font-semibold tracking-widest uppercase mb-2"
+          style={{ color: COLORS.accentBlue }}
+        >
+          Surveillance Module
+        </p>
+        <h1
+          className="text-4xl font-bold"
+          style={{ color: COLORS.textPrimary }}
+        >
+          Threat Management
+        </h1>
       </div>
 
-      <div className="mb-6 flex gap-2 overflow-x-auto pb-2">
-        {["all", "high", "medium", "low"].map((f) => (
-          <button
-            key={f}
-            onClick={() => setFilter(f)}
-            className={`rounded-full px-4 py-2 text-xs font-medium uppercase tracking-wider whitespace-nowrap ${
-              filter === f
-                ? "bg-blue-500/20 text-blue-400 border border-blue-500/30"
-                : "bg-slate-800/50 text-slate-400 border border-slate-700"
-            }`}
-          >
-            {f === "all" ? "All Logs" : `${f} Severity`}
-          </button>
-        ))}
-      </div>
+      {/* Add Threat Form */}
+      <form
+        onSubmit={handleSubmit}
+        className="rounded-xl p-4 mb-6"
+        style={{ backgroundColor: COLORS.bgCard }}
+      >
+        <div className="grid grid-cols-12 gap-4 items-end">
+          {/* Pattern Input */}
+          <div className="col-span-4">
+            <label
+              className="block text-xs font-medium uppercase tracking-wider mb-2"
+              style={{ color: COLORS.textMuted }}
+            >
+              Pattern (Domain or Regex)
+            </label>
+            <input
+              type="text"
+              value={formData.pattern}
+              onChange={(e) =>
+                setFormData({ ...formData, pattern: e.target.value })
+              }
+              placeholder="e.g. example\.com"
+              className="w-full px-4 py-3 rounded-lg outline-none transition-all"
+              style={{
+                backgroundColor: COLORS.bgHover,
+                color: COLORS.textPrimary,
+                border: `1px solid ${COLORS.bgHover}`,
+              }}
+              onFocus={(e) => (e.target.style.borderColor = COLORS.accentBlue)}
+              onBlur={(e) => (e.target.style.borderColor = COLORS.bgHover)}
+            />
+          </div>
 
-      <div className="space-y-3">
-        {filteredThreats.map((threat, i) => (
-          <motion.div
-            key={threat.id}
-            initial={{ opacity: 0, x: -20 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ delay: i * 0.05 }}
-            className="rounded-2xl border border-slate-800 bg-slate-900/50 p-4"
+          {/* Regex Checkbox */}
+          <div className="col-span-1 flex items-center justify-center pb-3">
+            <label className="flex items-center gap-2 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={formData.isRegex}
+                onChange={(e) =>
+                  setFormData({ ...formData, isRegex: e.target.checked })
+                }
+                className="w-4 h-4 rounded cursor-pointer"
+                style={{ accentColor: COLORS.accentBlue }}
+              />
+              <span className="text-sm" style={{ color: COLORS.textMuted }}>
+                Regex
+              </span>
+            </label>
+          </div>
+
+          {/* Severity Dropdown */}
+          <div className="col-span-2">
+            <label
+              className="block text-xs font-medium uppercase tracking-wider mb-2"
+              style={{ color: COLORS.textMuted }}
+            >
+              Severity
+            </label>
+            <select
+              value={formData.severity}
+              onChange={(e) =>
+                setFormData({
+                  ...formData,
+                  severity: e.target.value as Threat["severity"],
+                })
+              }
+              className="w-full px-4 py-3 rounded-lg outline-none cursor-pointer"
+              style={{
+                backgroundColor: COLORS.bgHover,
+                color: COLORS.textPrimary,
+                border: `1px solid ${COLORS.bgHover}`,
+              }}
+            >
+              <option value="critical">Critical</option>
+              <option value="high">High</option>
+              <option value="medium">Medium</option>
+              <option value="low">Low</option>
+            </select>
+          </div>
+
+          {/* Notes Input */}
+          <div className="col-span-3">
+            <label
+              className="block text-xs font-medium uppercase tracking-wider mb-2"
+              style={{ color: COLORS.textMuted }}
+            >
+              Notes
+            </label>
+            <input
+              type="text"
+              value={formData.notes}
+              onChange={(e) =>
+                setFormData({ ...formData, notes: e.target.value })
+              }
+              placeholder="Add context..."
+              className="w-full px-4 py-3 rounded-lg outline-none transition-all"
+              style={{
+                backgroundColor: COLORS.bgHover,
+                color: COLORS.textPrimary,
+                border: `1px solid ${COLORS.bgHover}`,
+              }}
+              onFocus={(e) => (e.target.style.borderColor = COLORS.accentBlue)}
+              onBlur={(e) => (e.target.style.borderColor = COLORS.bgHover)}
+            />
+          </div>
+
+          {/* Add Button */}
+          <div className="col-span-2">
+            <button
+              type="submit"
+              className="w-full py-3 px-6 rounded-lg font-semibold transition-all hover:opacity-90"
+              style={{
+                backgroundColor: COLORS.accentBlue,
+                color: COLORS.bgPrimary,
+              }}
+            >
+              Add
+            </button>
+          </div>
+        </div>
+      </form>
+
+      {/* Threats Table */}
+      <div
+        className="rounded-xl overflow-hidden"
+        style={{ backgroundColor: COLORS.bgCard }}
+      >
+        {/* Table Header */}
+        <div
+          className="grid grid-cols-12 gap-4 px-6 py-4 text-xs font-semibold uppercase tracking-wider"
+          style={{
+            color: COLORS.accentBlue,
+            borderBottom: `1px solid ${COLORS.bgHover}`,
+          }}
+        >
+          <div className="col-span-4">Pattern</div>
+          <div className="col-span-1 text-center">Regex</div>
+          <div className="col-span-2">Severity</div>
+          <div className="col-span-4">Notes</div>
+          <div className="col-span-1 text-right">Action</div>
+        </div>
+
+        {/* Table Body */}
+        {loading ? (
+          <div
+            className="px-6 py-12 text-center"
+            style={{ color: COLORS.textMuted }}
           >
-            <div className="flex items-start justify-between">
-              <div className="flex-1 min-w-0">
-                <h3 className="truncate font-medium text-white">
-                  {threat.pattern}
-                </h3>
-                <p className="mt-1 text-xs text-slate-400">
-                  {new Date(threat.createdAt).toLocaleDateString()} • Type:{" "}
-                  {threat.isRegex ? "Regex" : "String"}
-                </p>
-              </div>
-              <span
-                className={`rounded-lg px-2 py-1 text-[10px] font-bold uppercase ${getSeverityColor(threat.severity)}`}
+            Loading threats...
+          </div>
+        ) : threats.length === 0 ? (
+          <div
+            className="px-6 py-12 text-center"
+            style={{ color: COLORS.textMuted }}
+          >
+            No threat patterns defined yet
+          </div>
+        ) : (
+          threats.map((threat, index) => {
+            const severityStyle = getSeverityStyle(threat.severity);
+            return (
+              <motion.div
+                key={threat.id}
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: index * 0.05 }}
+                className="grid grid-cols-12 gap-4 px-6 py-4 items-center"
+                style={{
+                  borderBottom: `1px solid ${COLORS.bgHover}`,
+                  backgroundColor:
+                    index % 2 === 0 ? "transparent" : "rgba(28, 35, 55, 0.3)",
+                }}
               >
-                ! {threat.severity}
-              </span>
-            </div>
-
-            <div className="mt-3 flex items-center gap-2">
-              <div className="h-1 flex-1 rounded-full bg-slate-800">
+                {/* Pattern */}
                 <div
-                  className={`h-full rounded-full ${
-                    threat.severity === "critical"
-                      ? "bg-red-500 w-[95%]"
-                      : threat.severity === "high"
-                        ? "bg-orange-500 w-[75%]"
-                        : threat.severity === "medium"
-                          ? "bg-amber-500 w-[50%]"
-                          : "bg-blue-500 w-[25%]"
-                  }`}
-                />
-              </div>
-              <span className="text-xs text-slate-500">
-                {threat.severity === "critical"
-                  ? "98/100"
-                  : threat.severity === "high"
-                    ? "75/100"
-                    : threat.severity === "medium"
-                      ? "50/100"
-                      : "25/100"}
-              </span>
-            </div>
+                  className="col-span-4 font-mono text-sm truncate"
+                  style={{ color: COLORS.textPrimary }}
+                >
+                  {threat.pattern}
+                </div>
 
-            <div className="mt-4 flex gap-2">
-              <button className="flex-1 rounded-lg border border-slate-700 bg-slate-800/50 py-2 text-xs font-medium text-slate-300 hover:bg-slate-800">
-                Ignore
-              </button>
-              <button className="flex-1 rounded-lg bg-linear-to-r from-blue-600 to-blue-700 py-2 text-xs font-medium text-white">
-                Purge Threat
-              </button>
-              <button className="rounded-lg border border-slate-700 bg-slate-800/50 p-2 text-slate-400 hover:text-red-400">
-                <Trash2 className="h-4 w-4" />
-              </button>
-            </div>
-          </motion.div>
-        ))}
+                {/* Regex Checkmark */}
+                <div className="col-span-1 text-center">
+                  {threat.isRegex && (
+                    <span style={{ color: COLORS.accentBlue }}>✓</span>
+                  )}
+                </div>
+
+                {/* Severity Badge */}
+                <div className="col-span-2">
+                  <span
+                    className="inline-block px-3 py-1 rounded text-xs font-bold uppercase"
+                    style={{
+                      backgroundColor: severityStyle.bg,
+                      color: severityStyle.text,
+                      border: `1px solid ${severityStyle.border}`,
+                    }}
+                  >
+                    {threat.severity}
+                  </span>
+                </div>
+
+                {/* Notes */}
+                <div
+                  className="col-span-4 text-sm truncate"
+                  style={{ color: COLORS.textMuted }}
+                >
+                  {threat.notes || "—"}
+                </div>
+
+                {/* Delete Action */}
+                <div className="col-span-1 text-right">
+                  <button
+                    onClick={() => handleDelete(threat.id)}
+                    className="px-3 py-1 rounded text-xs font-medium transition-all hover:opacity-80"
+                    style={{
+                      backgroundColor: "transparent",
+                      color: COLORS.danger,
+                    }}
+                  >
+                    <Trash2 className="size-4" />
+                  </button>
+                </div>
+              </motion.div>
+            );
+          })
+        )}
       </div>
 
-      <button className="mt-6 flex w-full items-center justify-center gap-2 rounded-xl border border-slate-800 bg-slate-900/50 py-3 text-sm text-slate-400 hover:text-white">
-        <Clock className="h-4 w-4" />
-        LOAD MORE INCIDENT LOGS
+      {/* Reload Button */}
+      <button
+        onClick={fetchThreats}
+        className="mt-6 flex items-center justify-center gap-2 mx-auto px-6 py-3 rounded-lg text-sm font-medium transition-all hover:opacity-80"
+        style={{
+          backgroundColor: "transparent",
+          color: COLORS.textMuted,
+          border: `1px solid ${COLORS.bgHover}`,
+        }}
+      >
+        <RefreshCw className="w-4 h-4" />
+        Reload Threat Rules
       </button>
     </main>
   );

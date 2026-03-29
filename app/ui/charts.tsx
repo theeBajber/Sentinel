@@ -1,6 +1,6 @@
-// components/ThreatsBarChart.tsx
 "use client";
 
+import { useEffect, useState } from "react";
 import {
   BarChart,
   Bar,
@@ -16,65 +16,82 @@ type DataPoint = {
   blocked: number;
 };
 
-const data: DataPoint[] = [
-  { day: "Mon", blocked: 2 },
-  { day: "Tue", blocked: 5 },
-  { day: "Wed", blocked: 8 },
-  { day: "Thu", blocked: 3 },
-  { day: "Fri", blocked: 10 },
-  { day: "Sat", blocked: 6 },
-  { day: "Sun", blocked: 4 },
-];
-
 // threshold for "many"
 const THRESHOLD = 7;
 
 export default function ThreatsBarChart() {
+  const [data, setData] = useState<DataPoint[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const res = await fetch("/api/threat-trend");
+        const json = await res.json();
+        setData(Array.isArray(json) ? json : []);
+      } catch (e) {
+        console.error("Chart error:", e);
+        setData([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+  }, []);
+
   return (
     <div className="w-full h-full bg-bg-card rounded-xl p-4">
-      <ResponsiveContainer width="100%" height="100%">
-        <BarChart
-          data={data}
-          margin={{ top: 10, right: 0, left: -20, bottom: 0 }}
-        >
-          {/* subtle horizontal grid lines */}
-          <CartesianGrid
-            strokeDasharray="3 3"
-            stroke="rgba(198,198,205,0.1)"
-            vertical={false}
-          />
+      {loading ? (
+        <div className="w-full h-full flex items-center justify-center text-text-muted animate-pulse">
+          Loading...
+        </div>
+      ) : data.length === 0 ? (
+        <div className="w-full h-full flex items-center justify-center text-text-muted">
+          No threat data
+        </div>
+      ) : (
+        <ResponsiveContainer width="100%" height="100%">
+          <BarChart
+            data={data}
+            margin={{ top: 10, right: 0, left: -20, bottom: 0 }}
+          >
+            {/* EXACT SAME STYLING */}
+            <CartesianGrid
+              strokeDasharray="3 3"
+              stroke="rgba(198,198,205,0.1)"
+              vertical={false}
+            />
 
-          {/* X Axis (days only) */}
-          <XAxis
-            dataKey="day"
-            axisLine={true}
-            tickLine={false}
-            tick={{ fill: "var(--color-text-muted)", fontSize: 12 }}
-          />
+            <XAxis
+              dataKey="day"
+              axisLine={true}
+              tickLine={false}
+              tick={{ fill: "var(--color-text-muted)", fontSize: 12 }}
+            />
 
-          {/* Y Axis (no labels, only grid reference) */}
-          <YAxis
-            axisLine={true}
-            tickLine={true}
-            tick={true} // hides numbers
-            domain={[0, "dataMax + 2"]}
-          />
+            <YAxis
+              axisLine={true}
+              tickLine={true}
+              tick={true}
+              domain={[0, "dataMax + 2"]}
+            />
 
-          {/* Bars */}
-          <Bar dataKey="blocked" radius={[6, 6, 0, 0]} isAnimationActive>
-            {data.map((entry, index) => (
-              <Cell
-                key={`cell-${index}`}
-                fill={
-                  entry.blocked >= THRESHOLD
-                    ? "var(--color-accent-rose)"
-                    : "var(--color-accent-blue)"
-                }
-              />
-            ))}
-          </Bar>
-        </BarChart>
-      </ResponsiveContainer>
+            <Bar dataKey="blocked" radius={[6, 6, 0, 0]} isAnimationActive>
+              {data.map((entry, index) => (
+                <Cell
+                  key={`cell-${index}`}
+                  fill={
+                    entry.blocked >= THRESHOLD
+                      ? "var(--color-accent-rose)"
+                      : "var(--color-accent-blue)"
+                  }
+                />
+              ))}
+            </Bar>
+          </BarChart>
+        </ResponsiveContainer>
+      )}
     </div>
   );
 }
