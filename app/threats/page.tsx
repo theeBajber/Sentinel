@@ -116,10 +116,7 @@ export default function Threats() {
   };
 
   return (
-    <main
-      className="min-h-screen w-full p-6"
-      style={{ backgroundColor: COLORS.bgPrimary }}
-    >
+    <main className="min-h-screen w-full p-6 max-w-310 items-center">
       {/* Header */}
       <div className="mb-8">
         <p
@@ -158,12 +155,7 @@ export default function Threats() {
                 setFormData({ ...formData, pattern: e.target.value })
               }
               placeholder="e.g. example\.com"
-              className="w-full px-4 py-3 rounded-lg outline-none transition-all"
-              style={{
-                backgroundColor: COLORS.bgHover,
-                color: COLORS.textPrimary,
-                border: `1px solid ${COLORS.bgHover}`,
-              }}
+              className="w-full px-4 py-3 rounded-lg outline-none transition-all bg-bg-primary/50 text-text-primary border border-bg-hover"
               onFocus={(e) => (e.target.style.borderColor = COLORS.accentBlue)}
               onBlur={(e) => (e.target.style.borderColor = COLORS.bgHover)}
             />
@@ -178,8 +170,7 @@ export default function Threats() {
                 onChange={(e) =>
                   setFormData({ ...formData, isRegex: e.target.checked })
                 }
-                className="w-4 h-4 rounded cursor-pointer"
-                style={{ accentColor: COLORS.accentBlue }}
+                className={`w-4 h-4 rounded cursor-pointer not-checked:appearance-none bg-bg-primary/50 accent-accent-blue`}
               />
               <span className="text-sm" style={{ color: COLORS.textMuted }}>
                 Regex
@@ -203,11 +194,9 @@ export default function Threats() {
                   severity: e.target.value as Threat["severity"],
                 })
               }
-              className="w-full px-4 py-3 rounded-lg outline-none cursor-pointer"
+              className="w-full px-4 py-3 rounded-lg appearance-none outline-none cursor-pointer text-text-primary border border-bg-hover"
               style={{
-                backgroundColor: COLORS.bgHover,
-                color: COLORS.textPrimary,
-                border: `1px solid ${COLORS.bgHover}`,
+                backgroundColor: "#12192a",
               }}
             >
               <option value="critical">Critical</option>
@@ -232,12 +221,7 @@ export default function Threats() {
                 setFormData({ ...formData, notes: e.target.value })
               }
               placeholder="Add context..."
-              className="w-full px-4 py-3 rounded-lg outline-none transition-all"
-              style={{
-                backgroundColor: COLORS.bgHover,
-                color: COLORS.textPrimary,
-                border: `1px solid ${COLORS.bgHover}`,
-              }}
+              className="w-full px-4 py-3 rounded-lg outline-none transition-all bg-bg-primary/50 text-text-primary border border-bg-hover"
               onFocus={(e) => (e.target.style.borderColor = COLORS.accentBlue)}
               onBlur={(e) => (e.target.style.borderColor = COLORS.bgHover)}
             />

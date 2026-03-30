@@ -175,7 +175,6 @@ export default function Dashboard() {
             : "URL",
       status: log.verdict,
 
-      // ✅ FIXED LINE
       time: getRelativeTime(log.createdAt),
     };
   };

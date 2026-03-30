@@ -11,13 +11,13 @@ export default function Settings() {
 
   return (
     <main className="p-6 w-full">
-      <h1 className="mb-6 text-2xl font-bold text-white">Settings</h1>
+      <h1 className="mb-6 text-2xl font-bold text-text-primary">Settings</h1>
 
       <section className="mb-6">
         <h2 className="mb-3 text-xs font-semibold uppercase tracking-wider text-slate-500">
           Protection
         </h2>
-        <div className="rounded-2xl border border-slate-800 bg-slate-900/30 overflow-hidden">
+        <div className="rounded-2xl  bg-bg-card overflow-hidden">
           <ToggleItem
             icon={<ShieldCheck className="h-5 w-5" />}
             title="Real-time Scanning"
@@ -40,7 +40,7 @@ export default function Settings() {
         <h2 className="mb-3 text-xs font-semibold uppercase tracking-wider text-slate-500">
           Notifications
         </h2>
-        <div className="rounded-2xl border border-slate-800 bg-slate-900/30 overflow-hidden">
+        <div className="rounded-2xl bg-bg-card overflow-hidden">
           <ToggleItem
             icon={<Bell className="h-5 w-5" />}
             title="Threat Alerts"
@@ -55,12 +55,12 @@ export default function Settings() {
         <h2 className="mb-3 text-xs font-semibold uppercase tracking-wider text-slate-500">
           Integration
         </h2>
-        <div className="rounded-2xl border border-slate-800 bg-slate-900/30 overflow-hidden">
+        <div className="rounded-2xl bg-bg-card overflow-hidden">
           <button className="flex w-full items-center justify-between p-4 hover:bg-slate-800/50">
             <div className="flex items-center gap-3">
               <GlobeIcon className="h-5 w-5 text-slate-400" />
               <div className="text-left">
-                <p className="font-medium text-white">API Keys</p>
+                <p className="font-medium text-text-primary">API Keys</p>
                 <p className="text-xs text-slate-500">Manage access tokens</p>
               </div>
             </div>
@@ -95,19 +95,21 @@ function ToggleItem({
       <div className="flex items-center gap-3">
         <div className="text-slate-400">{icon}</div>
         <div>
-          <p className="font-medium text-white">{title}</p>
+          <p className="font-medium text-text-primary">{title}</p>
           <p className="text-xs text-slate-500">{description}</p>
         </div>
       </div>
       <button
         onClick={() => onChange(!enabled)}
         className={`relative h-6 w-11 rounded-full transition-colors ${
-          enabled ? "bg-blue-600" : "bg-slate-700"
+          enabled ? "bg-accent-blue" : "bg-slate-700"
         }`}
       >
         <span
-          className={`absolute left-1 top-1 h-4 w-4 rounded-full bg-white transition-transform ${
-            enabled ? "translate-x-5" : "translate-x-0"
+          className={`absolute left-1 top-1 h-4 w-4 rounded-full transition-all ${
+            enabled
+              ? "translate-x-5 bg-bg-primary"
+              : "translate-x-0 bg-text-primary"
           }`}
         />
       </button>

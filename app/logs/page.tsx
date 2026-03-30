@@ -29,7 +29,7 @@ const COLORS = {
   success: "#8fd4b2",
 };
 
-const ITEMS_PER_PAGE = 15;
+const ITEMS_PER_PAGE = 10;
 
 export default function Logs() {
   const [logs, setLogs] = useState<Log[]>([]);
@@ -93,6 +93,30 @@ export default function Logs() {
     if (filter === "all") return true;
     return log.verdict === filter;
   });
+  function getPageNumbers(current: number, total: number) {
+    const pages: (number | "...")[] = [];
+
+    if (total <= 5) {
+      return Array.from({ length: total }, (_, i) => i + 1);
+    }
+
+    pages.push(1);
+
+    if (current > 3) pages.push("...");
+
+    const start = Math.max(2, current - 1);
+    const end = Math.min(total - 1, current + 1);
+
+    for (let i = start; i <= end; i++) {
+      pages.push(i);
+    }
+
+    if (current < total - 2) pages.push("...");
+
+    pages.push(total);
+
+    return pages;
+  }
 
   const totalPages = Math.ceil(filteredLogs.length / ITEMS_PER_PAGE);
   const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
@@ -100,19 +124,6 @@ export default function Logs() {
     startIndex,
     startIndex + ITEMS_PER_PAGE,
   );
-
-  const getVerdictStyle = (verdict: string) => {
-    switch (verdict) {
-      case "unsafe":
-        return { bg: "#5c1a1a", text: "#ffb4ab", border: "#7f2a2a" };
-      case "suspicious":
-        return { bg: "#3d2d1a", text: "#dec29a", border: "#5c4528" };
-      case "safe":
-        return { bg: "#1c2337", text: "#8fd4b2", border: "#2a3a5c" };
-      default:
-        return { bg: "#1c2337", text: COLORS.textMuted, border: "#2a3a5c" };
-    }
-  };
 
   const getReasonsArray = (reasons: string) => {
     return reasons
@@ -152,121 +163,71 @@ export default function Logs() {
   };
 
   return (
-    <main
-      className="min-h-screen p-6"
-      style={{ backgroundColor: COLORS.bgPrimary }}
-    >
+    <main className="min-h-screen p-6 max-w-310 w-full">
       {/* Header */}
-      <div className="flex items-start justify-between mb-8">
+      <div className="flex items-start justify-between mb-8 w-full">
         <div>
-          <h1
-            className="text-3xl font-bold mb-2"
-            style={{ color: COLORS.textPrimary }}
-          >
+          <p className="text-xs text-accent-blue uppercase font-semibold tracking-widest mb-2">
+            Audit Layer
+          </p>
+          <h1 className="text-4xl font-bold mb-2 text-text-primary">
             Detection Logs
           </h1>
-          <p style={{ color: COLORS.textMuted }}>
-            Real-time analysis of incoming network traffic and file hash
-            verification.
-          </p>
-        </div>
-        <div
-          className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm"
-          style={{
-            backgroundColor: COLORS.bgCard,
-            color: COLORS.success,
-            border: `1px solid ${COLORS.success}40`,
-          }}
-        >
-          <span
-            className="w-2 h-2 rounded-full animate-pulse"
-            style={{ backgroundColor: COLORS.success }}
-          ></span>
-          LIVE MONITORING ACTIVE
         </div>
       </div>
 
       {/* Filters Bar */}
-      <div
-        className="rounded-xl p-4 mb-6 flex items-center gap-4 flex-wrap"
-        style={{ backgroundColor: COLORS.bgCard }}
-      >
+      <div className="rounded-xl h-25 w-full p-4 mb-6 flex justify-between items-center gap-4 flex-wrap bg-bg-card">
         {/* Filter Verdict */}
-        <div className="flex items-center gap-2">
-          <span
-            className="text-xs uppercase tracking-wider"
-            style={{ color: COLORS.textMuted }}
-          >
-            Filter Verdict
-          </span>
-          <div className="flex gap-1">
-            {["all", "safe", "suspicious", "unsafe"].map((f) => (
-              <button
-                key={f}
-                onClick={() => setFilter(f as any)}
-                className="px-4 py-2 rounded text-sm font-medium transition-all capitalize"
-                style={{
-                  backgroundColor:
-                    filter === f ? COLORS.bgHover : "transparent",
-                  color: filter === f ? COLORS.textPrimary : COLORS.textMuted,
-                  border: `1px solid ${filter === f ? COLORS.accentBlue : COLORS.bgHover}`,
-                }}
-              >
-                {f === "all" ? "All Activity" : f}
-              </button>
-            ))}
+        <div className="flex gap-6 items-center">
+          <div className="flex flex-col gap-2">
+            <span className="text-xs uppercase tracking-wider text-muted">
+              Filter Verdict
+            </span>
+            <div className="flex gap-1">
+              {["all", "safe", "suspicious", "unsafe"].map((f) => (
+                <button
+                  key={f}
+                  onClick={() => setFilter(f as any)}
+                  className="px-4 py-1.5 rounded text-xs font-medium transition-all capitalize"
+                  style={{
+                    backgroundColor:
+                      filter === f ? COLORS.bgHover : "transparent",
+                    color: filter === f ? COLORS.accentBlue : COLORS.textMuted,
+                    border: `1px solid ${filter === f ? COLORS.accentBlue : COLORS.bgHover}`,
+                  }}
+                >
+                  {f === "all" ? "All Activity" : f}
+                </button>
+              ))}
+            </div>
+          </div>
+          {/* Date Range */}
+          <div className="flex flex-col gap-2">
+            <span className="text-xs uppercase tracking-wider text-text-muted">
+              Date Range (Start/End)
+            </span>
+            <div className="flex items-center gap-2">
+              <input
+                type="date"
+                value={dateFrom}
+                onChange={(e) => setDateFrom(e.target.value)}
+                className="px-4 py-1.5 rounded text-sm outline-none bg-bg-primary/50 text-text-primary min-w-50 border-bg-hover border focus-within:border-accent-blue"
+              />
+              <span className="text-text-muted">→</span>
+              <input
+                type="date"
+                value={dateTo}
+                onChange={(e) => setDateTo(e.target.value)}
+                className="px-2 py-1 rounded text-sm outline-none bg-bg-primary/50 text-text-primary min-w-50 border-bg-hover border focus-within:border-accent-blue"
+              />
+            </div>
           </div>
         </div>
-
-        <div
-          className="w-px h-8"
-          style={{ backgroundColor: COLORS.bgHover }}
-        ></div>
-
-        {/* Date Range */}
-        <div className="flex items-center gap-2">
-          <span
-            className="text-xs uppercase tracking-wider"
-            style={{ color: COLORS.textMuted }}
-          >
-            Date Range (Start/End)
-          </span>
-          <input
-            type="date"
-            value={dateFrom}
-            onChange={(e) => setDateFrom(e.target.value)}
-            className="px-3 py-2 rounded text-sm outline-none"
-            style={{
-              backgroundColor: COLORS.bgHover,
-              color: COLORS.textPrimary,
-              border: `1px solid ${COLORS.bgHover}`,
-            }}
-          />
-          <span style={{ color: COLORS.textMuted }}>→</span>
-          <input
-            type="date"
-            value={dateTo}
-            onChange={(e) => setDateTo(e.target.value)}
-            className="px-3 py-2 rounded text-sm outline-none"
-            style={{
-              backgroundColor: COLORS.bgHover,
-              color: COLORS.textPrimary,
-              border: `1px solid ${COLORS.bgHover}`,
-            }}
-          />
-        </div>
-
-        <div className="flex-1"></div>
-
         {/* Export Button */}
         <button
           onClick={exportCSV}
-          className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all hover:opacity-90"
-          style={{
-            backgroundColor: COLORS.bgHover,
-            color: COLORS.textPrimary,
-            border: `1px solid ${COLORS.bgHover}`,
-          }}
+          className="flex items-center text-bg-primary bg-accent-blue gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all hover:opacity-90"
         >
           <Download className="w-4 h-4" />
           Export CSV
@@ -274,252 +235,152 @@ export default function Logs() {
       </div>
 
       {/* Logs Table */}
-      <div
-        className="rounded-xl overflow-hidden"
-        style={{ backgroundColor: COLORS.bgCard }}
-      >
-        {/* Table Header */}
-        <div
-          className="grid grid-cols-12 gap-4 px-6 py-4 text-xs font-semibold uppercase tracking-wider"
-          style={{
-            color: COLORS.textMuted,
-            borderBottom: `1px solid ${COLORS.bgHover}`,
-          }}
-        >
-          <div className="col-span-2">Time</div>
-          <div className="col-span-4">URL / Destination</div>
-          <div className="col-span-1">Verdict</div>
-          <div className="col-span-1">Score</div>
-          <div className="col-span-3">Reasons</div>
-          <div className="col-span-1 text-right">Action</div>
+      <div className="rounded-xl overflow-hidden bg-bg-card">
+        <table className="w-full text-sm">
+          {/* Header */}
+          <thead className="text-xs uppercase tracking-wider text-text-muted border-b border-bg-hover">
+            <tr>
+              <th className="px-6 py-4 text-left">Time</th>
+              <th className="px-6 py-4 text-left">URL / Destination</th>
+              <th className="px-6 py-4 text-left">Verdict</th>
+              <th className="px-6 py-4 text-left">Score</th>
+              <th className="px-6 py-4 text-left">Reasons</th>
+              <th className="px-6 py-4 text-right">Action</th>
+            </tr>
+          </thead>
+
+          {/* Body */}
+          <tbody>
+            {paginatedLogs.map((log, index) => {
+              const time = formatTime(log.createdAt);
+              const reasons = getReasonsArray(log.reasons);
+              const scoreBarColor = getScoreBarColor(log.verdict);
+
+              return (
+                <motion.tr
+                  key={log.id}
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ delay: index * 0.03 }}
+                  className="border-b border-bg-hover hover:bg-bg-primary/40"
+                >
+                  {/* Time */}
+                  <td className="px-6 py-4">
+                    <p className="font-mono text-text-primary">{time.time}</p>
+                    <p className="text-xs text-text-muted">{time.date}</p>
+                  </td>
+
+                  {/* URL */}
+                  <td className="px-6 py-4 font-mono text-text-primary max-w-62.5 truncate">
+                    {log.url.replace(/^https?:\/\//, "")}
+                  </td>
+
+                  {/* Verdict */}
+                  <td className="px-6 py-4">
+                    <span
+                      className={`px-3 py-1 rounded text-xs font-bold uppercase ${
+                        log.verdict === "safe"
+                          ? "bg-success/20 text-success border border-success/30"
+                          : log.verdict === "suspicious"
+                            ? "bg-warning/20 text-warning border border-warning/30"
+                            : "bg-danger/20 text-danger border border-danger/30"
+                      }`}
+                    >
+                      {log.verdict}
+                    </span>
+                  </td>
+
+                  {/* Score */}
+                  <td className="px-6 py-4">
+                    <p className="font-mono text-text-primary mb-1">
+                      {log.score.toString().padStart(2, "0")}
+                    </p>
+                    <div className="h-1 w-full rounded-full bg-bg-hover">
+                      <div
+                        className="h-full rounded-full"
+                        style={{
+                          width: `${log.score}%`,
+                          backgroundColor: scoreBarColor,
+                        }}
+                      />
+                    </div>
+                  </td>
+
+                  {/* Reasons */}
+                  <td className="px-6 py-4">
+                    <div className="flex flex-wrap gap-1">
+                      {reasons.slice(0, 3).map((r, i) => (
+                        <span
+                          key={i}
+                          className="px-2 py-1 rounded text-xs bg-bg-hover text-text-muted border border-bg-hover"
+                        >
+                          {r}
+                        </span>
+                      ))}
+                      {reasons.length > 3 && (
+                        <span className="text-xs text-text-muted">
+                          +{reasons.length - 3}
+                        </span>
+                      )}
+                    </div>
+                  </td>
+
+                  {/* Action */}
+                  <td className="px-6 py-4 text-right">
+                    <button className="p-2 rounded hover:bg-bg-hover text-text-muted hover:text-text-primary transition">
+                      <Eye className="w-4 h-4" />
+                    </button>
+                  </td>
+                </motion.tr>
+              );
+            })}
+          </tbody>
+        </table>
+        <div className="px-6 py-4 flex justify-between items-center border-t border-bg-hover">
+          <div className="text-sm text-text-muted">
+            Showing {startIndex + 1}–
+            {Math.min(startIndex + ITEMS_PER_PAGE, filteredLogs.length)} of{" "}
+            {filteredLogs.length}
+          </div>
+
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+              disabled={currentPage === 1}
+              className="size-8 flex items-center justify-center bg-bg-hover rounded disabled:opacity-30"
+            >
+              <ChevronLeft className="w-4 h-4" />
+            </button>
+
+            {getPageNumbers(currentPage, totalPages).map((p, i) =>
+              p === "..." ? (
+                <span key={i} className="text-text-muted px-2">
+                  ...
+                </span>
+              ) : (
+                <button
+                  key={i}
+                  onClick={() => setCurrentPage(p)}
+                  className={`w-8 h-8 rounded text-sm ${
+                    currentPage === p
+                      ? "bg-accent-blue text-bg-primary"
+                      : "bg-bg-hover text-text-primary"
+                  }`}
+                >
+                  {p}
+                </button>
+              ),
+            )}
+
+            <button
+              onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+              disabled={currentPage === totalPages}
+              className="size-8 flex items-center justify-center bg-bg-hover rounded disabled:opacity-30"
+            >
+              <ChevronRight className="w-4 h-4" />
+            </button>
+          </div>
         </div>
-
-        {/* Table Body */}
-        {loading ? (
-          <div
-            className="px-6 py-12 text-center"
-            style={{ color: COLORS.textMuted }}
-          >
-            Loading logs...
-          </div>
-        ) : paginatedLogs.length === 0 ? (
-          <div
-            className="px-6 py-12 text-center"
-            style={{ color: COLORS.textMuted }}
-          >
-            No logs found
-          </div>
-        ) : (
-          paginatedLogs.map((log, index) => {
-            const verdictStyle = getVerdictStyle(log.verdict);
-            const time = formatTime(log.createdAt);
-            const reasons = getReasonsArray(log.reasons);
-            const scoreBarColor = getScoreBarColor(log.verdict);
-
-            return (
-              <motion.div
-                key={log.id}
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ delay: index * 0.03 }}
-                className="grid grid-cols-12 gap-4 px-6 py-4 items-center"
-                style={{
-                  borderBottom: `1px solid ${COLORS.bgHover}`,
-                  backgroundColor:
-                    index % 2 === 0 ? "transparent" : "rgba(28, 35, 55, 0.3)",
-                }}
-              >
-                {/* Time */}
-                <div className="col-span-2">
-                  <div
-                    className="font-mono text-sm"
-                    style={{ color: COLORS.textPrimary }}
-                  >
-                    {time.time}
-                  </div>
-                  <div className="text-xs" style={{ color: COLORS.textMuted }}>
-                    {time.date}
-                  </div>
-                </div>
-
-                {/* URL */}
-                <div className="col-span-4">
-                  <div className="flex items-center gap-2">
-                    <span style={{ color: COLORS.textMuted }}>
-                      {log.url.startsWith("https") ? "🔒" : "🔗"}
-                    </span>
-                    <span
-                      className="text-sm truncate font-mono"
-                      style={{ color: COLORS.textPrimary }}
-                    >
-                      {log.url.replace(/^https?:\/\//, "").substring(0, 50)}
-                      {log.url.length > 50 ? "..." : ""}
-                    </span>
-                  </div>
-                </div>
-
-                {/* Verdict Badge */}
-                <div className="col-span-1">
-                  <span
-                    className="inline-block px-3 py-1 rounded text-xs font-bold uppercase"
-                    style={{
-                      backgroundColor: verdictStyle.bg,
-                      color: verdictStyle.text,
-                      border: `1px solid ${verdictStyle.border}`,
-                    }}
-                  >
-                    {log.verdict}
-                  </span>
-                </div>
-
-                {/* Score with Bar */}
-                <div className="col-span-1">
-                  <div
-                    className="text-sm font-mono mb-1"
-                    style={{ color: COLORS.textPrimary }}
-                  >
-                    {log.score.toString().padStart(2, "0")}
-                  </div>
-                  <div
-                    className="h-1 w-full rounded-full"
-                    style={{ backgroundColor: COLORS.bgHover }}
-                  >
-                    <div
-                      className="h-full rounded-full transition-all"
-                      style={{
-                        width: `${log.score}%`,
-                        backgroundColor: scoreBarColor,
-                      }}
-                    />
-                  </div>
-                </div>
-
-                {/* Reasons */}
-                <div className="col-span-3 flex flex-wrap gap-1">
-                  {reasons.slice(0, 3).map((reason, i) => (
-                    <span
-                      key={i}
-                      className="px-2 py-1 rounded text-xs"
-                      style={{
-                        backgroundColor: COLORS.bgHover,
-                        color: COLORS.textMuted,
-                        border: `1px solid ${COLORS.bgHover}`,
-                      }}
-                    >
-                      {reason}
-                    </span>
-                  ))}
-                  {reasons.length > 3 && (
-                    <span
-                      className="px-2 py-1 rounded text-xs"
-                      style={{ color: COLORS.textMuted }}
-                    >
-                      +{reasons.length - 3}
-                    </span>
-                  )}
-                </div>
-
-                {/* Action - View Eye */}
-                <div className="col-span-1 text-right">
-                  <button
-                    className="p-2 rounded transition-all hover:opacity-80"
-                    style={{ color: COLORS.textMuted }}
-                    title="View details"
-                  >
-                    <Eye className="w-4 h-4" />
-                  </button>
-                </div>
-              </motion.div>
-            );
-          })
-        )}
-
-        {/* Pagination Footer */}
-        {!loading && filteredLogs.length > 0 && (
-          <div
-            className="px-6 py-4 flex items-center justify-between"
-            style={{ borderTop: `1px solid ${COLORS.bgHover}` }}
-          >
-            <div style={{ color: COLORS.textMuted }} className="text-sm">
-              Showing {startIndex + 1}-
-              {Math.min(startIndex + ITEMS_PER_PAGE, filteredLogs.length)} of{" "}
-              {filteredLogs.length} logs
-            </div>
-
-            <div className="flex items-center gap-2">
-              <button
-                onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
-                disabled={currentPage === 1}
-                className="p-2 rounded transition-all disabled:opacity-30"
-                style={{
-                  backgroundColor: COLORS.bgHover,
-                  color: COLORS.textPrimary,
-                }}
-              >
-                <ChevronLeft className="w-4 h-4" />
-              </button>
-
-              {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
-                const pageNum = i + 1;
-                return (
-                  <button
-                    key={pageNum}
-                    onClick={() => setCurrentPage(pageNum)}
-                    className="w-8 h-8 rounded text-sm font-medium transition-all"
-                    style={{
-                      backgroundColor:
-                        currentPage === pageNum
-                          ? COLORS.accentBlue
-                          : COLORS.bgHover,
-                      color:
-                        currentPage === pageNum
-                          ? COLORS.bgPrimary
-                          : COLORS.textPrimary,
-                    }}
-                  >
-                    {pageNum}
-                  </button>
-                );
-              })}
-
-              {totalPages > 5 && (
-                <>
-                  <span style={{ color: COLORS.textMuted }}>...</span>
-                  <button
-                    onClick={() => setCurrentPage(totalPages)}
-                    className="w-8 h-8 rounded text-sm font-medium transition-all"
-                    style={{
-                      backgroundColor:
-                        currentPage === totalPages
-                          ? COLORS.accentBlue
-                          : COLORS.bgHover,
-                      color:
-                        currentPage === totalPages
-                          ? COLORS.bgPrimary
-                          : COLORS.textPrimary,
-                    }}
-                  >
-                    {totalPages}
-                  </button>
-                </>
-              )}
-
-              <button
-                onClick={() =>
-                  setCurrentPage((p) => Math.min(totalPages, p + 1))
-                }
-                disabled={currentPage === totalPages}
-                className="p-2 rounded transition-all disabled:opacity-30"
-                style={{
-                  backgroundColor: COLORS.bgHover,
-                  color: COLORS.textPrimary,
-                }}
-              >
-                <ChevronRight className="w-4 h-4" />
-              </button>
-            </div>
-          </div>
-        )}
       </div>
     </main>
   );
