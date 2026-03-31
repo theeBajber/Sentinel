@@ -10,7 +10,7 @@ export default function Settings() {
   const [strictMode, setStrictMode] = useState(false);
 
   return (
-    <main className="p-6 w-full">
+    <main className="min-h-screen p-6 w-full max-w-310">
       <h1 className="mb-6 text-2xl font-bold text-text-primary">Settings</h1>
 
       <section className="mb-6">
