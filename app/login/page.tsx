@@ -68,7 +68,7 @@ export default function Login() {
 
           <div>
             <label className="mb-2 block text-xs font-medium text-slate-400 uppercase tracking-wider">
-              Identity (Email)
+              Email
             </label>
             <div className="relative">
               <Mail className="absolute left-4 top-3.5 h-5 w-5 text-slate-500" />
@@ -86,7 +86,7 @@ export default function Login() {
           <div>
             <div className="mb-2 flex items-center justify-between">
               <label className="text-xs font-medium text-slate-400 uppercase tracking-wider">
-                Access Key
+                Passcode
               </label>
               <Link
                 href="#"
