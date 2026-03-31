@@ -18,6 +18,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import ThreatsBarChart from "./ui/charts";
+import { useAuth } from "@/lib/auth-context";
 
 interface ScanResult {
   verdict: "safe" | "suspicious" | "unsafe";
@@ -37,6 +38,7 @@ interface Log {
 }
 
 export default function Dashboard() {
+  const { apiFetch } = useAuth();
   const [url, setUrl] = useState("");
   const [scanning, setScanning] = useState(false);
   const [result, setResult] = useState<ScanResult | null>(null);
@@ -54,7 +56,7 @@ export default function Dashboard() {
 
   const fetchStats = async () => {
     try {
-      const res = await fetch("/api/stats");
+      const res = await apiFetch("/api/stats");
       if (res.ok) {
         const data = await res.json();
         setStats({
@@ -71,7 +73,7 @@ export default function Dashboard() {
 
   const fetchRecentLogs = async () => {
     try {
-      const res = await fetch("/api/logs?limit=4");
+      const res = await apiFetch("/api/logs?limit=4");
       if (res.ok) {
         const logs = await res.json();
         setRecentLogs(logs);
@@ -89,7 +91,7 @@ export default function Dashboard() {
     setResult(null);
 
     try {
-      const res = await fetch("/api/scan-url", {
+      const res = await apiFetch("/api/scan-url", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ url: url.trim() }),
@@ -97,8 +99,8 @@ export default function Dashboard() {
 
       const data = await res.json();
       setResult(data);
-      fetchRecentLogs(); // Refresh logs
-      fetchStats(); // Refresh stats
+      fetchRecentLogs();
+      fetchStats();
     } catch (error) {
       console.error("Scan failed:", error);
     } finally {

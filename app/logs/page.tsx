@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { Download, Eye, ChevronLeft, ChevronRight } from "lucide-react";
+import { useAuth } from "@/lib/auth-context";
 
 interface Log {
   id: string;
@@ -32,6 +33,7 @@ const COLORS = {
 const ITEMS_PER_PAGE = 10;
 
 export default function Logs() {
+  const { apiFetch } = useAuth();
   const [logs, setLogs] = useState<Log[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<
@@ -53,7 +55,7 @@ export default function Logs() {
       if (dateFrom) params.append("from", dateFrom);
       if (dateTo) params.append("to", dateTo);
 
-      const res = await fetch(`/api/logs?${params.toString()}`);
+      const res = await apiFetch(`/api/logs?${params.toString()}`);
       if (res.ok) {
         const data = await res.json();
         setLogs(data);

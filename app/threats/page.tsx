@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { RefreshCw, Trash2 } from "lucide-react";
+import { useAuth } from "@/lib/auth-context";
 
 interface Threat {
   id: string;
@@ -30,6 +31,7 @@ const COLORS = {
 };
 
 export default function Threats() {
+  const { apiFetch } = useAuth();
   const [threats, setThreats] = useState<Threat[]>([]);
   const [loading, setLoading] = useState(true);
   const [formData, setFormData] = useState({
@@ -46,7 +48,7 @@ export default function Threats() {
   const fetchThreats = async () => {
     try {
       setLoading(true);
-      const res = await fetch("/api/threats");
+      const res = await apiFetch("/api/threats");
       if (res.ok) {
         const data = await res.json();
         setThreats(data);
@@ -63,7 +65,7 @@ export default function Threats() {
     if (!formData.pattern.trim()) return;
 
     try {
-      const res = await fetch("/api/threats", {
+      const res = await apiFetch("/api/threats", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -90,7 +92,7 @@ export default function Threats() {
     if (!confirm("Delete this threat pattern?")) return;
 
     try {
-      const res = await fetch(`/api/threats?id=${id}`, {
+      const res = await apiFetch(`/api/threats?id=${id}`, {
         method: "DELETE",
       });
 
