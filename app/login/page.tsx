@@ -1,17 +1,16 @@
 "use client";
-
 import { useState } from "react";
 import { motion } from "framer-motion";
 import { Shield, Lock, Mail, ArrowRight, AlertCircle } from "lucide-react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useAuth } from "@/lib/auth-context";
 
 export default function Login() {
+  const { login } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-  const router = useRouter();
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -27,10 +26,7 @@ export default function Login() {
 
       if (res.ok) {
         const data = await res.json();
-        localStorage.setItem("token", data.token);
-        localStorage.setItem("email", data.email);
-        router.push("/");
-        router.refresh();
+        login(data.token, data.email);
       } else {
         const data = await res.json();
         setError(data.error || "Authentication failed");
@@ -65,7 +61,7 @@ export default function Login() {
         >
           {error && (
             <div className="flex items-center gap-2 rounded-xl bg-red-500/10 border border-red-500/20 p-3 text-red-400 text-sm">
-              <AlertCircle className="h-4 w-4 flex-shrink-0" />
+              <AlertCircle className="h-4 w-4 shrink-0" />
               <span>{error}</span>
             </div>
           )}
