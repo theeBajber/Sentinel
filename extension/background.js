@@ -21,6 +21,7 @@ const state = {
   sessionStartTime: Date.now(),
   whitelist: [],
   apiKey: null,
+  bypassedUrls: new Set(),
 };
 
 // Classification config
@@ -253,16 +254,14 @@ function updateBadge(verdict, tabId) {
  * Main request interceptor - BLOCKS unsafe URLs
  */
 browser.webRequest.onBeforeRequest.addListener(
-  async (details) => {
-    // Skip if disabled
+  (details) => {
+    // SYNCHRONOUS CHECKS FIRST - must return immediately
     if (!state.isEnabled) return;
-
-    // Skip non-main frame requests
     if (details.type !== "main_frame") return;
 
     const url = details.url;
 
-    // Skip internal URLs
+    // Skip internal URLs (sync)
     if (
       url.startsWith("about:") ||
       url.startsWith("moz-extension:") ||
@@ -272,70 +271,103 @@ browser.webRequest.onBeforeRequest.addListener(
       return;
     }
 
-    // Skip whitelisted
+    const domain = getDomain(url);
+
+    // SYNC: Check session bypass (immediate allow)
+    if (domain && state.bypassedUrls.has(domain)) {
+      console.log(`Session bypass active for: ${domain}`);
+      return; // Allow through
+    }
+
+    // SYNC: Check for bypass param (redirect immediately)
+    const bypassRegex = /[?&]sentinel_bypass=1/;
+    if (bypassRegex.test(url)) {
+      console.log(`Bypass param detected for: ${domain}`);
+
+      // Add to session bypass
+      if (domain) {
+        state.bypassedUrls.add(domain);
+        setTimeout(() => state.bypassedUrls.delete(domain), 5 * 60 * 1000);
+      }
+
+      // Strip and redirect (synchronous)
+      let cleanUrl = url
+        .replace(/[?&]sentinel_bypass=1/, "")
+        .replace("?&", "?")
+        .replace(/\?$/, "");
+
+      if (cleanUrl !== url) {
+        return { redirectUrl: cleanUrl };
+      }
+      return;
+    }
+
+    // SYNC: Check whitelist (immediate allow)
     if (isWhitelisted(url)) {
       updateBadge("safe", details.tabId);
       return;
     }
 
-    try {
-      const result = await scanUrl(url);
-      const verdict = result.verdict || result.status || "safe";
+    // ASYNC: Scan and block (handled separately)
+    handleAsyncScan(details, url, domain);
 
-      // Update badge
-      updateBadge(verdict, details.tabId);
-
-      // Log the scan
-      logScan(url, result, { tabId: details.tabId });
-
-      // Block if unsafe
-      if (verdict === "unsafe" || verdict === "malicious") {
-        state.blockedCount++;
-
-        // Update stats
-        browser.storage.local.get(["stats"]).then((data) => {
-          const stats = data.stats || { blocked: 0, scanned: 0 };
-          stats.blocked = state.blockedCount;
-          browser.storage.local.set({ stats });
-        });
-
-        // Show notification
-        showNotification(
-          "🛡️ Threat Blocked",
-          `Sentinel prevented access to: ${getDomain(url)}`,
-        );
-
-        // Redirect to blocked page
-        const blockedUrl =
-          browser.runtime.getURL("blocked.html") +
-          "?u=" +
-          encodeURIComponent(url) +
-          "&score=" +
-          encodeURIComponent(result.confidence || result.score || "95") +
-          "&reasons=" +
-          encodeURIComponent(
-            JSON.stringify(result.reasons || ["Phishing detected"]),
-          ) +
-          "&tabId=" +
-          details.tabId;
-
-        return { redirectUrl: blockedUrl };
-      }
-
-      // Warn if suspicious
-      if (verdict === "suspicious") {
-        showNotification(
-          "⚠️ Suspicious Site",
-          `Caution: ${getDomain(url)} flagged as suspicious`,
-        );
-      }
-    } catch (error) {
-      console.error("Scan error:", error);
-    }
+    // Return undefined to let request continue initially
+    // The async scan will redirect if needed
   },
   { urls: ["<all_urls>"], types: ["main_frame"] },
   ["blocking"],
 );
+
+// Separate async function for scanning
+async function handleAsyncScan(details, url, domain) {
+  try {
+    const result = await scanUrl(url);
+    const verdict = result.verdict || result.status || "safe";
+
+    updateBadge(verdict, details.tabId);
+    logScan(url, result, { tabId: details.tabId });
+
+    if (verdict === "unsafe" || verdict === "malicious") {
+      state.blockedCount++;
+
+      browser.storage.local.get(["stats"]).then((data) => {
+        const stats = data.stats || { blocked: 0, scanned: 0 };
+        stats.blocked = state.blockedCount;
+        browser.storage.local.set({ stats });
+      });
+
+      showNotification(
+        "🛡️ Threat Blocked",
+        `Sentinel prevented access to: ${domain}`,
+      );
+
+      const blockedUrl =
+        browser.runtime.getURL("blocked.html") +
+        "?u=" +
+        encodeURIComponent(url) +
+        "&score=" +
+        encodeURIComponent(result.confidence || result.score || "95") +
+        "&reasons=" +
+        encodeURIComponent(
+          JSON.stringify(result.reasons || ["Phishing detected"]),
+        ) +
+        "&tabId=" +
+        details.tabId;
+
+      // Use tabs.update to redirect since we're async
+      browser.tabs.update(details.tabId, { url: blockedUrl });
+    }
+
+    if (verdict === "suspicious") {
+      showNotification(
+        "⚠️ Suspicious Site",
+        `Caution: ${domain} flagged as suspicious`,
+      );
+    }
+  } catch (error) {
+    console.error("Scan error:", error);
+  }
+}
 
 /**
  * Handle tab updates
@@ -397,6 +429,20 @@ browser.runtime.onMessage.addListener((message, sender, sendResponse) => {
 
       case "openDashboard":
         browser.tabs.create({ url: CONFIG.API_BASE });
+        break;
+      case "tempBypass":
+        const bypassDomain = getDomain(message.url);
+        if (bypassDomain) {
+          state.bypassedUrls.add(bypassDomain);
+          // Auto-expire after 5 minutes
+          setTimeout(
+            () => {
+              state.bypassedUrls.delete(bypassDomain);
+            },
+            5 * 60 * 1000,
+          );
+        }
+        sendResponse({ success: true });
         break;
     }
   })();

@@ -154,6 +154,7 @@
         margin: 4px 0;
         padding-left: 16px;
         position: relative;
+        list-style: none;
       }
       .reasons li::before {
         content: "•";
@@ -223,7 +224,7 @@
       </div>
 
       <div class="buttons">
-        <button class="btn-primary" onclick="goBack()">
+        <button class="btn-primary" id="goBackBtn">
           <svg
             width="16"
             height="16"
@@ -241,39 +242,9 @@
           </svg>
           Go Back to Safety
         </button>
-        <button class="btn-secondary" onclick="proceed()">
-          Proceed Anyway
-        </button>
+        <button class="btn-secondary" id="proceedBtn">Proceed Anyway</button>
       </div>
     </div>
-
-    <script>
-      const params = new URLSearchParams(window.location.search);
-      const url = params.get("u") || "Unknown URL";
-      const score = params.get("score") || "0";
-      const reasons = params.get("reasons")
-        ? JSON.parse(decodeURIComponent(params.get("reasons")))
-        : [];
-
-      document.getElementById("url").textContent = new URL(url).hostname;
-      document.getElementById("score").textContent = score + "% Critical";
-
-      const reasonsList = document.getElementById("reasons");
-      reasons.forEach((r) => {
-        const li = document.createElement("li");
-        li.textContent = r;
-        reasonsList.appendChild(li);
-      });
-
-      function goBack() {
-        window.history.back();
-      }
-
-      function proceed() {
-        if (confirm("Are you sure? This site may be dangerous.")) {
-          window.location.href = url;
-        }
-      }
-    </script>
+    <script src="blocked.js"></script>
   </body>
 </html>

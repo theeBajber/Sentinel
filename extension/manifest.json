@@ -45,6 +45,7 @@
     "blocked.html",
     "setup.html",
     "setup.js",
+    "blocked.js",
     "icons/*.png"
   ],
 
