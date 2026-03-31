@@ -1,9 +1,8 @@
-// app/login/page.tsx
 "use client";
 
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { Shield, Lock, Mail, ArrowRight } from "lucide-react";
+import { Shield, Lock, Mail, ArrowRight, AlertCircle } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 
@@ -11,11 +10,13 @@ export default function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
   const router = useRouter();
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setLoading(true);
+    setError("");
 
     try {
       const res = await fetch("/api/auth", {
@@ -27,17 +28,22 @@ export default function Login() {
       if (res.ok) {
         const data = await res.json();
         localStorage.setItem("token", data.token);
+        localStorage.setItem("email", data.email);
         router.push("/");
+        router.refresh();
+      } else {
+        const data = await res.json();
+        setError(data.error || "Authentication failed");
       }
     } catch (error) {
-      console.error("Login failed:", error);
+      setError("Network error. Please try again.");
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen bg-slate-950 flex flex-col items-center justify-center p-4">
+    <div className="flex min-h-[80vh] flex-col items-center justify-center p-4">
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -45,11 +51,9 @@ export default function Login() {
       >
         <div className="mb-8 text-center">
           <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-slate-800/50">
-            <Shield className="h-8 w-8 text-blue-400" />
+            <Shield className="h-8 w-8 text-accent-blue" />
           </div>
-          <h1 className="text-2xl font-bold text-white">
-            SENTINEL<span className="text-blue-400">PHISH</span>
-          </h1>
+          <h1 className="text-2xl font-bold text-accent-blue">SENTINEL</h1>
           <p className="mt-2 text-sm text-slate-400 uppercase tracking-widest">
             Enter the Digital Bastion
           </p>
@@ -59,6 +63,13 @@ export default function Login() {
           onSubmit={handleSubmit}
           className="rounded-3xl border border-slate-800 bg-slate-900/50 p-6 space-y-4"
         >
+          {error && (
+            <div className="flex items-center gap-2 rounded-xl bg-red-500/10 border border-red-500/20 p-3 text-red-400 text-sm">
+              <AlertCircle className="h-4 w-4 flex-shrink-0" />
+              <span>{error}</span>
+            </div>
+          )}
+
           <div>
             <label className="mb-2 block text-xs font-medium text-slate-400 uppercase tracking-wider">
               Identity (Email)
@@ -70,7 +81,7 @@ export default function Login() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="agent@sentinel.net"
-                className="w-full rounded-xl border border-slate-700 bg-slate-800/50 py-3 pl-12 pr-4 text-white placeholder-slate-600 focus:border-blue-500 focus:outline-none"
+                className="w-full rounded-xl border border-slate-700 bg-slate-800/50 py-3 pl-12 pr-4 text-white placeholder-slate-600 focus:border-accent-blue focus:outline-none"
                 required
               />
             </div>
@@ -83,7 +94,7 @@ export default function Login() {
               </label>
               <Link
                 href="#"
-                className="text-xs text-blue-400 hover:text-blue-300"
+                className="text-xs text-accent-rose hover:text-accent-rose/80"
               >
                 Forgot Access?
               </Link>
@@ -95,7 +106,7 @@ export default function Login() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="••••••••"
-                className="w-full rounded-xl border border-slate-700 bg-slate-800/50 py-3 pl-12 pr-4 text-white placeholder-slate-600 focus:border-blue-500 focus:outline-none"
+                className="w-full rounded-xl border border-slate-700 bg-slate-800/50 py-3 pl-12 pr-4 text-white placeholder-slate-600 focus:border-accent-blue focus:outline-none"
                 required
               />
             </div>
@@ -104,7 +115,7 @@ export default function Login() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full rounded-xl bg-linear-to-r from-blue-600 to-blue-700 py-4 text-sm font-bold text-white shadow-lg shadow-blue-500/25 transition-all hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 flex items-center justify-center gap-2"
+            className="w-full rounded-xl bg-linear-to-r bg-accent-blue py-4 text-sm font-bold text-bg-primary shadow-lg shadow-blue-500/25 transition-all hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 flex items-center justify-center gap-2"
           >
             {loading ? (
               "Initializing..."
@@ -120,7 +131,7 @@ export default function Login() {
             New operative?{" "}
             <Link
               href="#"
-              className="text-blue-400 hover:text-blue-300 font-semibold"
+              className="text-accent-blue hover:text-accent-blue/80 font-semibold"
             >
               Create Account
             </Link>
@@ -129,14 +140,14 @@ export default function Login() {
 
         <div className="mt-6 flex items-center justify-center gap-6 rounded-full border border-slate-800 bg-slate-900/50 px-6 py-3">
           <div className="flex items-center gap-2">
-            <span className="h-2 w-2 rounded-full bg-emerald-500" />
+            <span className="h-2 w-2 rounded-full bg-success" />
             <span className="text-xs font-medium text-slate-400 uppercase">
               System: Armed
             </span>
           </div>
           <div className="h-4 w-px bg-slate-700" />
           <div className="flex items-center gap-2">
-            <GlobeIcon className="h-3 w-3 text-blue-400" />
+            <GlobeIcon className="h-3 w-3 text-accent-blue" />
             <span className="text-xs font-medium text-slate-400 uppercase">
               Global Mesh: Active
             </span>

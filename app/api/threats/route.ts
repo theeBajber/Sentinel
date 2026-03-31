@@ -1,18 +1,48 @@
+// app/api/threats/route.ts
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
+import { requireAuthOrApiKey, checkPermission } from "@/lib/auth";
 
-// GET /api/threats
+// GET /api/threats - Public read for extension, protected for web
 export async function GET(req: NextRequest) {
   try {
+    // Allow public reads for extension threat checking
+    // But require auth for management features
+    const auth = await requireAuthOrApiKey(req);
+
     const { searchParams } = new URL(req.url);
     const q = searchParams.get("q") || "";
 
+    // If not authenticated, only return active high-confidence threats
+    // and limit results
+    const where: any = {};
+    if (q) {
+      where.pattern = { contains: q, mode: "insensitive" };
+    }
+
+    if (!auth.success) {
+      // Public access - only return severe threats, limit fields
+      where.severity = { in: ["high", "critical"] };
+    }
+
     const threats = await prisma.threatEntry.findMany({
-      where: q ? { pattern: { contains: q, mode: "insensitive" } } : {},
+      where,
       orderBy: { createdAt: "desc" },
+      take: auth.success ? 1000 : 100, // Limit for public
+      select: auth.success
+        ? undefined
+        : {
+            id: true,
+            pattern: true,
+            isRegex: true,
+            severity: true,
+            category: true,
+          },
     });
 
-    return NextResponse.json(threats);
+    const response = NextResponse.json(threats);
+    response.headers.set("Access-Control-Allow-Origin", "*");
+    return response;
   } catch (error) {
     console.error("Failed to fetch threats:", error);
     return NextResponse.json(
@@ -22,8 +52,21 @@ export async function GET(req: NextRequest) {
   }
 }
 
-// POST /api/threats
+// POST /api/threats - Protected
 export async function POST(req: NextRequest) {
+  const auth = await requireAuthOrApiKey(req);
+  if (!auth.success) return auth.response;
+
+  if (auth.source === "apikey" && auth.apiKeyId) {
+    const hasPermission = await checkPermission(auth.apiKeyId, "write:threats");
+    if (!hasPermission) {
+      return NextResponse.json(
+        { error: "Insufficient permissions" },
+        { status: 403 },
+      );
+    }
+  }
+
   try {
     const body = await req.json();
     const {
@@ -53,7 +96,9 @@ export async function POST(req: NextRequest) {
       },
     });
 
-    return NextResponse.json(threat, { status: 201 });
+    const response = NextResponse.json(threat, { status: 201 });
+    response.headers.set("Access-Control-Allow-Origin", "*");
+    return response;
   } catch (error) {
     console.error("Failed to create threat:", error);
     return NextResponse.json(
@@ -63,8 +108,24 @@ export async function POST(req: NextRequest) {
   }
 }
 
-// DELETE /api/threats?id=xxx
+// DELETE /api/threats?id=xxx - Protected
 export async function DELETE(req: NextRequest) {
+  const auth = await requireAuthOrApiKey(req);
+  if (!auth.success) return auth.response;
+
+  if (auth.source === "apikey" && auth.apiKeyId) {
+    const hasPermission = await checkPermission(
+      auth.apiKeyId,
+      "delete:threats",
+    );
+    if (!hasPermission) {
+      return NextResponse.json(
+        { error: "Insufficient permissions" },
+        { status: 403 },
+      );
+    }
+  }
+
   try {
     const { searchParams } = new URL(req.url);
     const id = searchParams.get("id");
@@ -77,7 +138,9 @@ export async function DELETE(req: NextRequest) {
       where: { id },
     });
 
-    return NextResponse.json({ success: true });
+    const response = NextResponse.json({ success: true });
+    response.headers.set("Access-Control-Allow-Origin", "*");
+    return response;
   } catch (error) {
     console.error("Failed to delete threat:", error);
     return NextResponse.json(
@@ -85,4 +148,15 @@ export async function DELETE(req: NextRequest) {
       { status: 500 },
     );
   }
+}
+
+export async function OPTIONS(req: NextRequest) {
+  return new NextResponse(null, {
+    status: 204,
+    headers: {
+      "Access-Control-Allow-Origin": "*",
+      "Access-Control-Allow-Methods": "GET, POST, DELETE, OPTIONS",
+      "Access-Control-Allow-Headers": "Content-Type, Authorization, X-API-Key",
+    },
+  });
 }

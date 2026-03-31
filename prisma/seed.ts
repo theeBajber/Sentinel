@@ -1,6 +1,7 @@
 // prisma/seed.ts
 import { PrismaClient } from "@prisma/client";
 import bcrypt from "bcryptjs";
+import { generateApiKey } from "../lib/auth"; // We'll create this
 
 const prisma = new PrismaClient();
 
@@ -51,67 +52,64 @@ const PRODUCTION_THREATS = [
 async function main() {
   console.log("🌊 Seeding SentinelPhish database...");
 
-  // Check if admin exists
-  const existingAdmin = await prisma.adminUser.findUnique({
-    where: { email: ADMIN_CREDENTIALS.email },
+  // Create admin user
+  const passwordHash = await bcrypt.hash(ADMIN_CREDENTIALS.password, 12);
+  const admin = await prisma.adminUser.create({
+    data: {
+      email: ADMIN_CREDENTIALS.email,
+      password: passwordHash,
+    },
   });
+  console.log("✅ Admin user created:", ADMIN_CREDENTIALS.email);
 
-  if (!existingAdmin) {
-    const passwordHash = await bcrypt.hash(ADMIN_CREDENTIALS.password, 12);
-    await prisma.adminUser.create({
-      data: {
-        email: ADMIN_CREDENTIALS.email,
-        password: passwordHash,
-      },
-    });
-    console.log("✅ Admin user created:", ADMIN_CREDENTIALS.email);
-  } else {
-    console.log("ℹ️ Admin user already exists");
-  }
+  // Create API key for extension
+  const { key: extensionApiKey } = await generateApiKey(
+    "Firefox Extension Production",
+    ["scan", "log", "read:threats", "read:logs"],
+    admin.id,
+  );
+  console.log("🔑 Extension API Key:", extensionApiKey);
 
-  // Upsert threats (update if exists, create if not)
+  // Create threats
   for (const threat of PRODUCTION_THREATS) {
-    await prisma.threatEntry.upsert({
-      where: { id: threat.id },
-      update: {},
-      create: threat,
+    await prisma.threatEntry.create({
+      data: threat,
     });
     console.log(`✅ Threat pattern: ${threat.pattern}`);
   }
 
-  // Create sample logs if none exist
-  const existingLogs = await prisma.detectionLog.count();
-  if (existingLogs === 0) {
-    const sampleUrls = [
-      { url: "https://chatgpt.com", verdict: "safe", score: 0 },
-      { url: "https://pinterest.com", verdict: "safe", score: 0 },
-      { url: "http://login-secure-example.com", verdict: "unsafe", score: 85 },
-      { url: "https://paypal-secure-login.com", verdict: "unsafe", score: 92 },
-      { url: "http://bit.ly/suspicious", verdict: "suspicious", score: 45 },
-    ];
+  // Create sample logs
+  const sampleUrls = [
+    { url: "https://chatgpt.com", verdict: "safe", score: 0 },
+    { url: "https://pinterest.com", verdict: "safe", score: 0 },
+    { url: "http://login-secure-example.com", verdict: "unsafe", score: 85 },
+    { url: "https://paypal-secure-login.com", verdict: "unsafe", score: 92 },
+    { url: "http://bit.ly/suspicious", verdict: "suspicious", score: 45 },
+  ];
 
-    for (let i = 0; i < 10; i++) {
-      const sample = sampleUrls[i % sampleUrls.length];
-      await prisma.detectionLog.create({
-        data: {
-          url: sample.url,
-          domain: new URL(sample.url).hostname,
-          verdict: sample.verdict,
-          score: sample.score,
-          reasons: JSON.stringify(["Sample detection"]),
-          clientIp: `192.168.1.${Math.floor(Math.random() * 255)}`,
-          userAgent:
-            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
-          source: "seed",
-        },
-      });
-    }
-    console.log("✅ Sample logs created (10 entries)");
+  for (let i = 0; i < 10; i++) {
+    const sample = sampleUrls[i % sampleUrls.length];
+    await prisma.detectionLog.create({
+      data: {
+        url: sample.url,
+        domain: new URL(sample.url).hostname,
+        verdict: sample.verdict,
+        score: sample.score,
+        reasons: JSON.stringify(["Sample detection"]),
+        clientIp: `192.168.1.${Math.floor(Math.random() * 255)}`,
+        userAgent:
+          "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
+        source: "seed",
+      },
+    });
   }
+  console.log("✅ Sample logs created (10 entries)");
 
   console.log("\n🎉 SEED COMPLETE!");
   console.log("🔐 Admin Login:", ADMIN_CREDENTIALS.email);
-  console.log("🔑 Password:    ", ADMIN_CREDENTIALS.password);
+  console.log("🔑 Admin Password:", ADMIN_CREDENTIALS.password);
+  console.log("🔌 Extension API Key:", extensionApiKey);
+  console.log("\n⚠️  SAVE THE API KEY - you'll need it for the extension!");
 }
 
 main()

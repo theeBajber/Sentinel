@@ -16,6 +16,19 @@ model AdminUser {
   updatedAt DateTime @updatedAt
 }
 
+model ApiKey {
+  id          String   @id @default(cuid())
+  name        String
+  key         String   @unique
+  permissions String[]
+  isActive    Boolean  @default(true)
+  lastUsed    DateTime?
+  createdAt   DateTime @default(now())
+  createdBy   String?
+
+  @@index([isActive])
+}
+
 model ThreatEntry {
   id          String   @id @default(cuid())
   pattern     String
@@ -26,7 +39,7 @@ model ThreatEntry {
   category    String?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
-  
+
   @@index([pattern])
 }
 
@@ -43,10 +56,12 @@ model DetectionLog {
   clientIp         String?
   userAgent        String?
   source           String   @default("extension")
+  apiKeyId         String?
   tabId            Int?
   createdAt        DateTime @default(now())
-  
+
   @@index([createdAt])
   @@index([verdict])
   @@index([domain])
+  @@index([apiKeyId])
 }

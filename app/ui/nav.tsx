@@ -3,9 +3,14 @@ import { ShieldHalfIcon, User } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import Threats from "../threats/page";
+import { useAuth } from "@/lib/auth-context";
 
 export function Nav() {
   const pathName = usePathname();
+  const { isAuthenticated, email, logout } = useAuth();
+  console.log(email, logout, isAuthenticated);
+  if (pathName === "/login") return null;
+  if (!isAuthenticated) return null;
   const links = [
     { name: "Dashboard", path: "/" },
     { name: "Threats", path: "/threats" },
@@ -31,7 +36,12 @@ export function Nav() {
             </Link>
           ))}
         </div>
-        <button className="p-1.5 rounded-lg bg-[#2e3447]" onClick={() => {}}>
+        <button
+          className="p-1.5 rounded-lg bg-[#2e3447]"
+          onClick={() => {
+            logout();
+          }}
+        >
           <User className="size-4" />
         </button>
       </div>

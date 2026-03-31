@@ -1,254 +1,406 @@
 // extension/background.js
-const API_BASE_DEFAULT = "http://localhost:3000";
+const CONFIG = {
+  API_BASE: "https://sentinel-zeta-pied.vercel.app",
+  SCAN_ENDPOINT: "/api/scan-url",
+  LOG_ENDPOINT: "/api/logs",
+  STATS_ENDPOINT: "/api/stats",
+  THREATS_ENDPOINT: "/api/threats",
 
-// Local cache
-const urlCache = new Map();
-const CACHE_DURATION = 5 * 60 * 1000;
-const TRUSTED_DOMAINS = new Set([
-  "google.com",
-  "youtube.com",
-  "github.com",
-  "stackoverflow.com",
-  "openai.com",
-  "chatgpt.com",
-  "chat.com",
-  "pinterest.com",
-  "reddit.com",
-  "twitter.com",
-  "x.com",
-  "facebook.com",
-  "amazon.com",
-  "microsoft.com",
-  "apple.com",
-  "netflix.com",
-]);
+  CACHE_DURATION: 5 * 60 * 1000, // 5 minutes
+  RETRY_ATTEMPTS: 3,
+  RETRY_DELAY: 1000,
 
-// Check if domain is trusted
-function isTrustedDomain(hostname) {
-  const parts = hostname.split(".");
-  for (let i = 0; i < parts.length - 1; i++) {
-    const domain = parts.slice(i).join(".");
-    if (TRUSTED_DOMAINS.has(domain)) return true;
+  API_KEY: null,
+};
+
+// State management
+const state = {
+  isEnabled: true,
+  scanCache: new Map(),
+  blockedCount: 0,
+  sessionStartTime: Date.now(),
+  whitelist: [],
+  apiKey: null,
+};
+
+// Classification config
+const CLASSIFICATION = {
+  SAFE: {
+    status: "safe",
+    color: "#8fd4b2",
+    icon: "✓",
+    label: "Safe",
+  },
+  SUSPICIOUS: {
+    status: "suspicious",
+    color: "#e6c38a",
+    icon: "⚠",
+    label: "Suspicious",
+  },
+  UNSAFE: {
+    status: "unsafe",
+    color: "#f2a7a0",
+    icon: "✕",
+    label: "Unsafe",
+  },
+};
+
+// Initialize
+browser.runtime.onInstalled.addListener(async () => {
+  console.log("🛡️ Sentinel installed");
+
+  // Initialize storage with defaults
+  await browser.storage.local.set({
+    enabled: true,
+    stats: { blocked: 0, scanned: 0 },
+    whitelist: [],
+    settings: {
+      autoBlock: true,
+      showNotifications: true,
+    },
+  });
+
+  // Prompt for API key on first install
+  browser.tabs.create({ url: browser.runtime.getURL("setup.html") });
+});
+
+// Load state on startup
+browser.storage.local
+  .get(["enabled", "stats", "whitelist", "apiKey"])
+  .then((result) => {
+    state.isEnabled = result.enabled !== false;
+    state.blockedCount = result.stats?.blocked || 0;
+    state.whitelist = result.whitelist || [];
+    state.apiKey = result.apiKey || null;
+
+    if (!state.apiKey) {
+      console.warn(
+        "⚠️ No API key configured. Extension will use public endpoints.",
+      );
+    }
+  });
+
+/**
+ * Get API headers with authentication
+ */
+function getHeaders() {
+  const headers = {
+    "Content-Type": "application/json",
+  };
+
+  if (state.apiKey) {
+    headers["X-API-Key"] = state.apiKey;
   }
-  return TRUSTED_DOMAINS.has(hostname);
+
+  return headers;
 }
 
-// Get API base from storage
-async function getApiBase() {
-  try {
-    const items = await browser.storage.sync.get({ apiBase: API_BASE_DEFAULT });
-    return items.apiBase || API_BASE_DEFAULT;
-  } catch (e) {
-    return API_BASE_DEFAULT;
-  }
-}
-
-// Quick local check
-function quickCheck(url) {
+/**
+ * Extract domain from URL
+ */
+function getDomain(url) {
   try {
     const urlObj = new URL(url);
-    const hostname = urlObj.hostname.toLowerCase();
-
-    // Immediately trust known domains
-    if (isTrustedDomain(hostname)) {
-      return {
-        verdict: "safe",
-        score: 0,
-        reasons: ["Trusted domain"],
-        cached: true,
-      };
-    }
-
-    // Quick heuristics only
-    const reasons = [];
-    let score = 0;
-
-    if (hostname.length > 60) {
-      reasons.push("Long hostname");
-      score += 5;
-    }
-
-    if (/[0-9]{6,}/.test(url)) {
-      reasons.push("Suspicious numeric pattern");
-      score += 5;
-    }
-
-    // Only flag obvious bad patterns locally
-    const badPatterns = [
-      /(paypal|apple|google|microsoft|amazon|facebook)-?(secure|login|verify|update)\.(tk|ml|ga|cf)/i,
-      /(secure|login|verify|update)-?(paypal|apple|google|microsoft|amazon|facebook)/i,
-    ];
-
-    for (const pattern of badPatterns) {
-      if (pattern.test(hostname)) {
-        reasons.push("Phishing pattern detected");
-        score += 50;
-      }
-    }
-
-    if (score >= 50)
-      return { verdict: "unsafe", score, reasons, cached: false };
-    if (score >= 20)
-      return { verdict: "suspicious", score, reasons, cached: false };
-
-    return {
-      verdict: "safe",
-      score,
-      reasons: ["Quick check passed"],
-      cached: false,
-    };
+    return urlObj.hostname.toLowerCase();
   } catch (e) {
-    return {
-      verdict: "suspicious",
-      score: 30,
-      reasons: ["Invalid URL"],
-      cached: false,
-    };
+    return null;
   }
 }
 
-// Cache helpers
-function getCachedResult(url) {
-  const cached = urlCache.get(url);
-  if (cached && Date.now() - cached.timestamp < CACHE_DURATION) {
+/**
+ * Check if URL is in whitelist
+ */
+function isWhitelisted(url) {
+  const domain = getDomain(url);
+  if (!domain) return false;
+  return state.whitelist.some(
+    (item) => domain.includes(item) || item.includes(domain),
+  );
+}
+
+/**
+ * Fetch with retry logic
+ */
+async function fetchWithRetry(url, options, attempts = CONFIG.RETRY_ATTEMPTS) {
+  for (let i = 0; i < attempts; i++) {
+    try {
+      const response = await fetch(url, options);
+      if (response.ok) return response;
+
+      // If 401, API key might be invalid
+      if (response.status === 401) {
+        console.error("API authentication failed");
+        // Clear invalid key
+        state.apiKey = null;
+        browser.storage.local.remove("apiKey");
+      }
+
+      throw new Error(`HTTP ${response.status}`);
+    } catch (error) {
+      if (i === attempts - 1) throw error;
+      await new Promise((r) => setTimeout(r, CONFIG.RETRY_DELAY * (i + 1)));
+    }
+  }
+}
+
+/**
+ * Scan URL via Sentinel API
+ */
+async function scanUrl(url) {
+  // Check cache first
+  const cached = state.scanCache.get(url);
+  if (cached && Date.now() - cached.timestamp < CONFIG.CACHE_DURATION) {
     return cached.result;
   }
-  return null;
-}
 
-function cacheResult(url, result) {
-  urlCache.set(url, { result, timestamp: Date.now() });
-}
-
-// Main scan function
-async function scanUrl(url, tabId) {
   try {
-    // Check cache first
-    let result = getCachedResult(url);
+    const response = await fetchWithRetry(
+      `${CONFIG.API_BASE}${CONFIG.SCAN_ENDPOINT}`,
+      {
+        method: "POST",
+        headers: getHeaders(),
+        body: JSON.stringify({ url }),
+      },
+    );
 
-    if (!result) {
-      // Quick local check first
-      result = quickCheck(url);
+    const result = await response.json();
 
-      if (!result.cached) {
-        cacheResult(url, result);
-      }
+    // Cache result
+    state.scanCache.set(url, {
+      result,
+      timestamp: Date.now(),
+    });
+
+    return result;
+  } catch (error) {
+    console.error("Scan failed:", error);
+    // Fail open for better UX (or closed for strict security)
+    return {
+      status: "error",
+      verdict: "safe",
+      score: 0,
+      reasons: ["API unavailable - allowing access"],
+      error: error.message,
+    };
+  }
+}
+
+/**
+ * Log scan to API (async, fire-and-forget)
+ */
+async function logScan(url, result, details = {}) {
+  try {
+    await fetch(`${CONFIG.API_BASE}${CONFIG.LOG_ENDPOINT}`, {
+      method: "POST",
+      headers: getHeaders(),
+      body: JSON.stringify({
+        url,
+        verdict: result.verdict || result.status,
+        score: result.score || 0,
+        reasons: result.reasons || [],
+        threatType: result.threatType,
+        confidence: result.confidence,
+        tabId: details.tabId,
+        timestamp: new Date().toISOString(),
+        source: "extension",
+      }),
+    });
+  } catch (e) {
+    // Silent fail for logging
+    console.debug("Log failed:", e);
+  }
+}
+
+/**
+ * Show notification
+ */
+function showNotification(title, message, type = "basic") {
+  browser.storage.local.get(["settings"]).then((result) => {
+    if (result.settings?.showNotifications !== false) {
+      browser.notifications.create({
+        type,
+        iconUrl: "icons/icon128.png",
+        title,
+        message,
+      });
     }
+  });
+}
 
-    // Update badge immediately based on local check
-    updateBadge(tabId, result.verdict);
+/**
+ * Update badge
+ */
+function updateBadge(verdict, tabId) {
+  const config = CLASSIFICATION[verdict.toUpperCase()] || CLASSIFICATION.SAFE;
 
-    // Block immediately if unsafe
-    if (result.verdict === "unsafe") {
-      blockTab(tabId, url, result);
+  browser.browserAction.setBadgeText({
+    text: config.icon,
+    tabId,
+  });
+
+  browser.browserAction.setBadgeBackgroundColor({
+    color: config.color,
+    tabId,
+  });
+
+  browser.browserAction.setTitle({
+    title: `Sentinel: ${config.label}`,
+    tabId,
+  });
+}
+
+/**
+ * Main request interceptor - BLOCKS unsafe URLs
+ */
+browser.webRequest.onBeforeRequest.addListener(
+  async (details) => {
+    // Skip if disabled
+    if (!state.isEnabled) return;
+
+    // Skip non-main frame requests
+    if (details.type !== "main_frame") return;
+
+    const url = details.url;
+
+    // Skip internal URLs
+    if (
+      url.startsWith("about:") ||
+      url.startsWith("moz-extension:") ||
+      url.startsWith("chrome-extension:") ||
+      url.startsWith("file:")
+    ) {
       return;
     }
 
-    // Server verification for non-trusted domains
-    if (!result.cached) {
-      verifyWithServer(url, tabId, result);
+    // Skip whitelisted
+    if (isWhitelisted(url)) {
+      updateBadge("safe", details.tabId);
+      return;
     }
-  } catch (e) {
-    console.error("Scan error:", e);
-  }
-}
 
-function updateBadge(tabId, verdict) {
-  const actionApi = browser.browserAction || browser.action;
-  const colors = { safe: "#10b981", suspicious: "#f59e0b", unsafe: "#ef4444" };
-  const icons = { safe: "", suspicious: "!", unsafe: "✕" };
+    try {
+      const result = await scanUrl(url);
+      const verdict = result.verdict || result.status || "safe";
 
-  actionApi.setBadgeText({ tabId, text: icons[verdict] || "" });
-  actionApi.setBadgeBackgroundColor({
-    tabId,
-    color: colors[verdict] || "#6b7280",
-  });
-}
+      // Update badge
+      updateBadge(verdict, details.tabId);
 
-function blockTab(tabId, url, result) {
-  const params = new URLSearchParams({
-    u: url,
-    score: result.score.toString(),
-    reasons: encodeURIComponent(JSON.stringify(result.reasons)),
-  });
+      // Log the scan
+      logScan(url, result, { tabId: details.tabId });
 
-  browser.tabs.update(tabId, {
-    url: browser.runtime.getURL(`blocked.html?${params.toString()}`),
-  });
-}
+      // Block if unsafe
+      if (verdict === "unsafe" || verdict === "malicious") {
+        state.blockedCount++;
 
-async function verifyWithServer(url, tabId, localResult) {
-  try {
-    const apiBase = await getApiBase();
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 3000);
+        // Update stats
+        browser.storage.local.get(["stats"]).then((data) => {
+          const stats = data.stats || { blocked: 0, scanned: 0 };
+          stats.blocked = state.blockedCount;
+          browser.storage.local.set({ stats });
+        });
 
-    const res = await fetch(`${apiBase}/api/scan-url`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ url }),
-      signal: controller.signal,
-    });
+        // Show notification
+        showNotification(
+          "🛡️ Threat Blocked",
+          `Sentinel prevented access to: ${getDomain(url)}`,
+        );
 
-    clearTimeout(timeout);
+        // Redirect to blocked page
+        const blockedUrl =
+          browser.runtime.getURL("blocked.html") +
+          "?u=" +
+          encodeURIComponent(url) +
+          "&score=" +
+          encodeURIComponent(result.confidence || result.score || "95") +
+          "&reasons=" +
+          encodeURIComponent(
+            JSON.stringify(result.reasons || ["Phishing detected"]),
+          ) +
+          "&tabId=" +
+          details.tabId;
 
-    if (!res.ok) throw new Error("Server error");
+        return { redirectUrl: blockedUrl };
+      }
 
-    const serverResult = await res.json();
-    cacheResult(url, serverResult);
-
-    // Update if server found it unsafe
-    if (serverResult.verdict === "unsafe" && localResult.verdict !== "unsafe") {
-      blockTab(tabId, url, serverResult);
-    } else {
-      updateBadge(tabId, serverResult.verdict);
+      // Warn if suspicious
+      if (verdict === "suspicious") {
+        showNotification(
+          "⚠️ Suspicious Site",
+          `Caution: ${getDomain(url)} flagged as suspicious`,
+        );
+      }
+    } catch (error) {
+      console.error("Scan error:", error);
     }
-  } catch (e) {
-    // Keep local result on server error
-    console.warn("Server verification failed:", e);
-  }
-}
+  },
+  { urls: ["<all_urls>"], types: ["main_frame"] },
+  ["blocking"],
+);
 
-// Event listeners
+/**
+ * Handle tab updates
+ */
 browser.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
-  if (changeInfo.url && /^https?:/.test(changeInfo.url)) {
-    scanUrl(changeInfo.url, tabId);
+  if (changeInfo.status === "loading" && tab.url) {
+    browser.browserAction.setBadgeText({ text: "", tabId });
   }
 });
 
-browser.tabs.onActivated.addListener((activeInfo) => {
-  browser.tabs.get(activeInfo.tabId).then((tab) => {
-    if (tab.url && /^https?:/.test(tab.url)) {
-      scanUrl(tab.url, activeInfo.tabId);
+/**
+ * Message handler for popup
+ */
+browser.runtime.onMessage.addListener((message, sender, sendResponse) => {
+  (async () => {
+    switch (message.action) {
+      case "getStatus":
+        sendResponse({
+          enabled: state.isEnabled,
+          blockedCount: state.blockedCount,
+          apiKeyConfigured: !!state.apiKey,
+          sessionStartTime: state.sessionStartTime,
+        });
+        break;
+
+      case "toggle":
+        state.isEnabled = !state.isEnabled;
+        await browser.storage.local.set({ enabled: state.isEnabled });
+        sendResponse({ enabled: state.isEnabled });
+        break;
+
+      case "scanUrl":
+        try {
+          const result = await scanUrl(message.url);
+          sendResponse(result);
+        } catch (error) {
+          sendResponse({ error: error.message });
+        }
+        break;
+
+      case "whitelist":
+        const domain = getDomain(message.url);
+        if (domain && !state.whitelist.includes(domain)) {
+          state.whitelist.push(domain);
+          await browser.storage.local.set({ whitelist: state.whitelist });
+        }
+        sendResponse({ success: true });
+        break;
+
+      case "getWhitelist":
+        sendResponse({ whitelist: state.whitelist });
+        break;
+
+      case "setApiKey":
+        state.apiKey = message.apiKey;
+        await browser.storage.local.set({ apiKey: message.apiKey });
+        sendResponse({ success: true });
+        break;
+
+      case "openDashboard":
+        browser.tabs.create({ url: CONFIG.API_BASE });
+        break;
     }
-  });
+  })();
+  return true; // Async response
 });
 
-// Context menu
-browser.runtime.onInstalled.addListener(() => {
-  browser.contextMenus.create({
-    id: "scan-link",
-    title: "Scan with SentinelPhish",
-    contexts: ["link"],
-  });
-});
-
-browser.contextMenus.onClicked.addListener(async (info, tab) => {
-  if (info.menuItemId === "scan-link" && info.linkUrl) {
-    const result = await quickCheck(info.linkUrl);
-
-    if (result.verdict === "unsafe") {
-      browser.tabs.create({
-        url: browser.runtime.getURL(
-          `blocked.html?u=${encodeURIComponent(info.linkUrl)}&score=${result.score}`,
-        ),
-      });
-    } else {
-      browser.notifications.create({
-        type: "basic",
-        title: "SentinelPhish Scan",
-        message: `${result.verdict.toUpperCase()}: ${result.score}/100 risk score`,
-      });
-    }
-  }
-});
+console.log("🛡️ Sentinel background script loaded");
