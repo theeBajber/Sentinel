@@ -1,13 +1,13 @@
-// prisma/seed.ts
 import { PrismaClient } from "@prisma/client";
 import bcrypt from "bcryptjs";
-import { generateApiKey } from "../lib/auth"; // We'll create this
+import { generateApiKey } from "../lib/auth";
 
 const prisma = new PrismaClient();
 
 const ADMIN_CREDENTIALS = {
   email: "admin@sentinel.net",
   password: "Sentinel@2024!",
+  name: "System Administrator",
 };
 
 const PRODUCTION_THREATS = [
@@ -52,17 +52,18 @@ const PRODUCTION_THREATS = [
 async function main() {
   console.log("🌊 Seeding SentinelPhish database...");
 
-  // Create admin user
+  // Create admin user (now using User model)
   const passwordHash = await bcrypt.hash(ADMIN_CREDENTIALS.password, 12);
-  const admin = await prisma.adminUser.create({
+  const admin = await prisma.user.create({
     data: {
       email: ADMIN_CREDENTIALS.email,
       password: passwordHash,
+      name: ADMIN_CREDENTIALS.name,
     },
   });
   console.log("✅ Admin user created:", ADMIN_CREDENTIALS.email);
 
-  // Create API key for extension
+  // Create API key for extension (now with userId relation)
   const { key: extensionApiKey } = await generateApiKey(
     "Firefox Extension Production",
     ["scan", "log", "read:threats", "read:logs"],
@@ -78,7 +79,7 @@ async function main() {
     console.log(`✅ Threat pattern: ${threat.pattern}`);
   }
 
-  // Create sample logs
+  // Create sample logs (now with userId relation)
   const sampleUrls = [
     { url: "https://chatgpt.com", verdict: "safe", score: 0 },
     { url: "https://pinterest.com", verdict: "safe", score: 0 },
@@ -100,6 +101,7 @@ async function main() {
         userAgent:
           "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
         source: "seed",
+        userId: admin.id, // Link to admin user
       },
     });
   }
