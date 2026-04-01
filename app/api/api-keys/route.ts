@@ -34,6 +34,9 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   const auth = await requireAuth(req);
   if (!auth.success) return auth.response;
+  if (!auth.userId) {
+    return NextResponse.json({ error: "User ID not found" }, { status: 400 });
+  }
 
   try {
     const body = await req.json();
