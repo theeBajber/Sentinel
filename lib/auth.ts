@@ -108,24 +108,27 @@ export async function optionalAuth(req: NextRequest): Promise<AuthResult> {
 
 async function validateApiKey(
   key: string,
-): Promise<{ valid: boolean; apiKeyId?: string }> {
+): Promise<{ valid: boolean; apiKeyId?: string; userId?: string | null }> {
   try {
     // Find active API keys and check if any match
     const apiKeys = await prisma.apiKey.findMany({
       where: { isActive: true },
-      select: { id: true, key: true },
+      select: { id: true, key: true, userId: true },
     });
+    console.log("Found active keys:", apiKeys.length);
 
     for (const apiKey of apiKeys) {
+      console.log("Checking key:", apiKey.id, "User:", apiKey.userId); // DEBUG
       // Use timing-safe comparison
       const isValid = await bcrypt.compare(key, apiKey.key);
+      console.log("Compare result:", isValid); // DEBUG
       if (isValid) {
         // Update last used
         await prisma.apiKey.update({
           where: { id: apiKey.id },
           data: { lastUsed: new Date() },
         });
-        return { valid: true, apiKeyId: apiKey.id };
+        return { valid: true, apiKeyId: apiKey.id, userId: apiKey.userId };
       }
     }
 
