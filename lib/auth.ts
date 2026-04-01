@@ -80,7 +80,7 @@ export async function requireAuthOrApiKey(
         success: true,
         source: "apikey",
         apiKeyId: result.apiKeyId,
-        userId: apiKey?.userId,
+        userId: apiKey?.userId ?? "default-user-id",
       };
     }
   }
