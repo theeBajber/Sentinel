@@ -1,5 +1,6 @@
 "use client";
 
+import { useAuth } from "@/lib/auth-context";
 import { useEffect, useState } from "react";
 import {
   BarChart,
@@ -22,11 +23,12 @@ const THRESHOLD = 7;
 export default function ThreatsBarChart() {
   const [data, setData] = useState<DataPoint[]>([]);
   const [loading, setLoading] = useState(true);
+  const { apiFetch } = useAuth();
 
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const res = await fetch("/api/threat-trend");
+        const res = await apiFetch("/api/threat-trend");
         const json = await res.json();
         setData(Array.isArray(json) ? json : []);
       } catch (e) {

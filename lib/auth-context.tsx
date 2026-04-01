@@ -7,16 +7,20 @@ import { useRouter, usePathname } from "next/navigation";
 interface AuthContextType {
   isAuthenticated: boolean;
   email: string | null;
+  userId: string | null;
+  name: string | null;
   logout: () => void;
-  login: (token: string, email: string) => void; // Add this
+  login: (token: string, email: string, userId: string, name?: string) => void;
   apiFetch: (url: string, options?: RequestInit) => Promise<Response>;
 }
 
 const AuthContext = createContext<AuthContextType>({
   isAuthenticated: false,
   email: null,
+  userId: null,
+  name: null,
   logout: () => {},
-  login: () => {}, // Add default
+  login: () => {},
   apiFetch: async () => {
     throw new Error("AuthContext not initialized");
   },
@@ -25,6 +29,8 @@ const AuthContext = createContext<AuthContextType>({
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [email, setEmail] = useState<string | null>(null);
+  const [userId, setUserId] = useState<string | null>(null);
+  const [name, setName] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const router = useRouter();
   const pathname = usePathname();
@@ -32,10 +38,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     const token = localStorage.getItem("token");
     const storedEmail = localStorage.getItem("email");
+    const storedUserId = localStorage.getItem("userId");
+    const storedName = localStorage.getItem("name");
 
-    if (token) {
+    if (token && storedUserId) {
       setIsAuthenticated(true);
       setEmail(storedEmail);
+      setUserId(storedUserId);
+      setName(storedName);
     }
     setLoading(false);
   }, []);
@@ -43,7 +53,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     if (loading) return;
 
-    const isPublicPage = pathname === "/login";
+    const isPublicPage = pathname === "/login" || pathname === "/signup";
 
     if (!isAuthenticated && !isPublicPage) {
       router.push("/login");
@@ -52,20 +62,33 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }, [isAuthenticated, loading, pathname, router]);
 
-  // Add login function
-  const login = (token: string, userEmail: string) => {
+  const login = (
+    token: string,
+    userEmail: string,
+    id: string,
+    userName?: string,
+  ) => {
     localStorage.setItem("token", token);
     localStorage.setItem("email", userEmail);
+    localStorage.setItem("userId", id);
+    if (userName) localStorage.setItem("name", userName);
+
     setIsAuthenticated(true);
     setEmail(userEmail);
+    setUserId(id);
+    setName(userName || null);
     router.push("/");
   };
 
   const logout = () => {
     localStorage.removeItem("token");
     localStorage.removeItem("email");
+    localStorage.removeItem("userId");
+    localStorage.removeItem("name");
     setIsAuthenticated(false);
     setEmail(null);
+    setUserId(null);
+    setName(null);
     router.push("/login");
   };
 

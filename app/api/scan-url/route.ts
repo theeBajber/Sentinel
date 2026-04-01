@@ -2,19 +2,16 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { scanUrl } from "@/lib/scanner";
-import { requireAuthOrApiKey, optionalAuth } from "@/lib/auth";
+import { optionalAuth } from "@/lib/auth";
 
 export async function POST(req: NextRequest) {
-  // Allow both authenticated and anonymous scans
-  // Anonymous scans have rate limits, authenticated don't
   const auth = await optionalAuth(req);
-
-  // Simple rate limiting for anonymous requests (in production, use Redis)
-  if (auth.source === "public") {
-    const clientIp = req.headers.get("x-forwarded-for") || "unknown";
-    // You could implement rate limiting here
-    console.log(`Anonymous scan from ${clientIp}`);
-  }
+  console.log("Auth result:", {
+    success: auth.success,
+    source: auth.source,
+    userId: auth.userId,
+    apiKeyId: auth.apiKeyId,
+  });
 
   try {
     const body = await req.json();
@@ -33,12 +30,10 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Extract domain for indexing
     const domain = new URL(url).hostname;
-
     const result = await scanUrl(url);
 
-    // Log the scan with source info
+    // Log the scan with userId if authenticated
     await prisma.detectionLog.create({
       data: {
         url,
@@ -57,11 +52,11 @@ export async function POST(req: NextRequest) {
             : auth.source === "jwt"
               ? "dashboard"
               : "public",
+        userId: auth.userId || null, // Add this - captures user from JWT or API key
         apiKeyId: auth.apiKeyId || null,
       },
     });
 
-    // Add CORS headers for extension
     const response = NextResponse.json(result);
     response.headers.set("Access-Control-Allow-Origin", "*");
     response.headers.set("Access-Control-Allow-Methods", "POST, OPTIONS");

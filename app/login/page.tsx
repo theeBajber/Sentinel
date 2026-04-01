@@ -26,7 +26,7 @@ export default function Login() {
 
       if (res.ok) {
         const data = await res.json();
-        login(data.token, data.email);
+        login(data.token, data.email, data.userId, data.name);
       } else {
         const data = await res.json();
         setError(data.error || "Authentication failed");
@@ -117,7 +117,7 @@ export default function Login() {
               "Initializing..."
             ) : (
               <>
-                INITIALIZE PROTOCOL
+                Login
                 <ArrowRight className="h-4 w-4" />
               </>
             )}

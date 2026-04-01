@@ -7,9 +7,17 @@ export async function GET(req: NextRequest) {
     const auth = await requireAuthOrApiKey(req);
     if (!auth.success) return auth.response;
 
-    const totalScans = await prisma.detectionLog.count();
+    const where: any = {};
+    if (auth.userId) {
+      where.userId = auth.userId;
+    }
+
+    const totalScans = await prisma.detectionLog.count({ where });
     const threatsBlocked = await prisma.detectionLog.count({
-      where: { verdict: "unsafe" },
+      where: {
+        ...where,
+        verdict: "unsafe",
+      },
     });
 
     const response = NextResponse.json({

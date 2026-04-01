@@ -1,40 +1,39 @@
+import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
-import { NextResponse } from "next/server";
+import { requireAuthOrApiKey } from "@/lib/auth";
 
-export async function GET() {
+export async function GET(req: NextRequest) {
   try {
+    const auth = await requireAuthOrApiKey(req);
+    if (!auth.success) return auth.response;
+
     const now = new Date();
     const last7Days = new Date();
     last7Days.setDate(now.getDate() - 6);
     last7Days.setHours(0, 0, 0, 0);
 
-    // Check if prisma is properly initialized
-    if (!prisma) {
-      console.error("Prisma client not initialized");
-      return NextResponse.json(
-        { error: "Database not configured" },
-        { status: 500 },
-      );
+    // Build where clause with user filter
+    const where: any = {
+      createdAt: { gte: last7Days },
+      verdict: "unsafe",
+    };
+
+    // Filter by userId if available
+    if (auth.userId) {
+      where.userId = auth.userId;
     }
 
-    let logs: any[] = [];
-    try {
-      logs =
-        (await (prisma as any).DetectionLog?.findMany({
-          where: {
-            createdAt: { gte: last7Days },
-            verdict: "unsafe",
-          },
-        })) || [];
-    } catch (e) {
-      console.error(e);
-    }
+    const logs = await prisma.detectionLog.findMany({
+      where,
+      select: {
+        createdAt: true,
+      },
+    });
 
-    // Initialize last 7 days (starting from 6 days ago to today)
+    // Initialize last 7 days
     const days = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
     const result: { day: string; blocked: number }[] = [];
 
-    // Generate last 7 days starting from today
     for (let i = 6; i >= 0; i--) {
       const d = new Date(now);
       d.setDate(d.getDate() - i);
@@ -56,7 +55,9 @@ export async function GET() {
       }
     });
 
-    return NextResponse.json(result);
+    const response = NextResponse.json(result);
+    response.headers.set("Access-Control-Allow-Origin", "*");
+    return response;
   } catch (error) {
     console.error("Threat trend API error:", error);
     return NextResponse.json(
@@ -67,4 +68,15 @@ export async function GET() {
       { status: 500 },
     );
   }
+}
+
+export async function OPTIONS(req: NextRequest) {
+  return new NextResponse(null, {
+    status: 204,
+    headers: {
+      "Access-Control-Allow-Origin": "*",
+      "Access-Control-Allow-Methods": "GET, OPTIONS",
+      "Access-Control-Allow-Headers": "Content-Type, Authorization, X-API-Key",
+    },
+  });
 }

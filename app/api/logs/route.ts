@@ -27,6 +27,9 @@ export async function GET(req: NextRequest) {
     const limit = parseInt(searchParams.get("limit") || "500");
 
     const where: any = {};
+    if (auth.userId) {
+      where.userId = auth.userId;
+    }
     if (q) where.url = { contains: q, mode: "insensitive" };
     if (severity) where.verdict = severity;
     if (from || to) {

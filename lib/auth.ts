@@ -10,6 +10,7 @@ export interface AuthResult {
   success: boolean;
   response?: NextResponse;
   apiKeyId?: string;
+  userId?: string;
   source?: "jwt" | "apikey" | "public";
 }
 
@@ -25,8 +26,15 @@ export async function requireAuth(req: NextRequest): Promise<AuthResult> {
   }
 
   try {
-    jwt.verify(token, JWT_SECRET);
-    return { success: true, source: "jwt" };
+    const decoded = jwt.verify(token, JWT_SECRET) as {
+      sub: string;
+      email: string;
+    };
+    return {
+      success: true,
+      source: "jwt",
+      userId: decoded.sub,
+    };
   } catch {
     return {
       success: false,
@@ -45,8 +53,15 @@ export async function requireAuthOrApiKey(
   if (authHeader.startsWith("Bearer ")) {
     const token = authHeader.replace("Bearer ", "");
     try {
-      jwt.verify(token, JWT_SECRET);
-      return { success: true, source: "jwt" };
+      const decoded = jwt.verify(token, JWT_SECRET) as {
+        sub: string;
+        email: string;
+      };
+      return {
+        success: true,
+        source: "jwt",
+        userId: decoded.sub,
+      };
     } catch {
       // Invalid JWT, continue to check API key
     }
@@ -56,10 +71,16 @@ export async function requireAuthOrApiKey(
   if (apiKeyHeader && apiKeyHeader.startsWith("sent_")) {
     const result = await validateApiKey(apiKeyHeader);
     if (result.valid && result.apiKeyId) {
+      const apiKey = await prisma.apiKey.findUnique({
+        where: { id: result.apiKeyId },
+        select: { userId: true },
+      });
+
       return {
         success: true,
         source: "apikey",
         apiKeyId: result.apiKeyId,
+        userId: apiKey?.userId,
       };
     }
   }
