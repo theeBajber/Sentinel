@@ -156,7 +156,7 @@ export async function checkPermission(
 export async function generateApiKey(
   name: string,
   permissions: string[],
-  createdBy?: string,
+  userId: string,
 ): Promise<{ key: string; id: string }> {
   // Generate random key: sent_<32 random chars>
   const randomPart = Array.from(crypto.getRandomValues(new Uint8Array(24)))
@@ -172,7 +172,7 @@ export async function generateApiKey(
       name,
       key: hashedKey,
       permissions,
-      createdBy,
+      userId,
     },
   });
 

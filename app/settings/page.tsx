@@ -3,6 +3,7 @@
 
 import { useState } from "react";
 import { Bell, ShieldCheck, Key, ChevronRight, GlobeIcon } from "lucide-react";
+import Link from "next/link";
 
 export default function Settings() {
   const [notifications, setNotifications] = useState(true);
@@ -56,7 +57,10 @@ export default function Settings() {
           Integration
         </h2>
         <div className="rounded-2xl bg-bg-card overflow-hidden">
-          <button className="flex w-full items-center justify-between p-4 hover:bg-slate-800/50">
+          <Link
+            href="/settings/api-keys"
+            className="flex w-full items-center justify-between p-4 hover:bg-slate-800/50 transition-colors"
+          >
             <div className="flex items-center gap-3">
               <GlobeIcon className="h-5 w-5 text-slate-400" />
               <div className="text-left">
@@ -65,7 +69,7 @@ export default function Settings() {
               </div>
             </div>
             <ChevronRight className="h-5 w-5 text-slate-500" />
-          </button>
+          </Link>
         </div>
       </section>
 
