@@ -56,7 +56,6 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
-  // Extension logging endpoint - requires API key
   const auth = await requireAuthOrApiKey(req);
   if (!auth.success) return auth.response;
 
@@ -88,6 +87,7 @@ export async function POST(req: NextRequest) {
         confidence: confidence || null,
         source: "extension",
         apiKeyId: auth.apiKeyId || null,
+        userId: auth.userId || null, // <-- ADD THIS LINE
         tabId: tabId || null,
         clientIp: req.headers.get("x-forwarded-for") || "unknown",
         userAgent: req.headers.get("user-agent") || "unknown",

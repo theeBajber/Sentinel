@@ -12,13 +12,11 @@ export async function GET(req: NextRequest) {
     last7Days.setDate(now.getDate() - 6);
     last7Days.setHours(0, 0, 0, 0);
 
-    // Build where clause with user filter
     const where: any = {
       createdAt: { gte: last7Days },
       verdict: "unsafe",
     };
 
-    // Filter by userId if available
     if (auth.userId) {
       where.userId = auth.userId;
     }

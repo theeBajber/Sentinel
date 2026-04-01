@@ -8,6 +8,7 @@ export async function GET(req: NextRequest) {
     if (!auth.success) return auth.response;
 
     const where: any = {};
+    // Filter by userId whether from session or API key
     if (auth.userId) {
       where.userId = auth.userId;
     }
