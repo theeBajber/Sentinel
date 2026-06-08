@@ -182,13 +182,13 @@ export default function Dashboard() {
   };
 
   return (
-    <main className="flex flex-col gap-6 max-w-310 w-full items-center p-6">
+    <main className="flex flex-col gap-6 max-w-4xl lg:max-w-310 w-full items-center p-4 sm:p-6 mx-auto">
       {/* Hero Card with Scan Input */}
-      <section className="flex items-center gap-6 w-full h-120 flex-col md:flex-row">
+      <section className="flex flex-col lg:flex-row items-stretch gap-4 lg:gap-6 w-full min-h-[28rem] lg:min-h-[34rem]">
         <motion.div
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
-          className="relative flex flex-col w-2/3 p-6 rounded-xl bg-bg-card h-full"
+          className="relative flex flex-col w-full lg:w-2/3 p-4 sm:p-6 rounded-xl bg-bg-card"
         >
           <div className="flex w-full flex-col">
             <div className="flex w-full items-center justify-between">
@@ -197,10 +197,10 @@ export default function Dashboard() {
               </p>
               <div className="rounded-full bg-accent-blue size-3 animate-pulse" />
             </div>
-            <h1 className="my-4 text-6xl font-bold text-text-primary">
+            <h1 className="my-4 text-3xl sm:text-5xl lg:text-6xl font-bold text-text-primary">
               System Secure
             </h1>
-            <p className="leading-relaxed text-lg text-text-muted">
+            <p className="leading-relaxed text-base sm:text-lg text-text-muted">
               No active threats detected. All real-time interception layers are
               active and monitoring incoming protocols.
             </p>
@@ -208,8 +208,8 @@ export default function Dashboard() {
           <div className="w-full">
             {/* Scan Input */}
             <form onSubmit={handleScan} className="mt-6">
-              <div className="flex px-4 h-16 bg-bg-primary/50 rounded-xl w-full items-center">
-                <Link2 className="h-5 w-5 text-accent-blue" />
+              <div className="flex px-4 h-16 gap-2 bg-bg-primary/50 rounded-xl w-full items-center">
+                <Link2 className="h-5 w-5 text-accent-blue flex-shrink-0" />
                 <input
                   type="url"
                   value={url}
@@ -221,7 +221,7 @@ export default function Dashboard() {
                 <button
                   type="submit"
                   disabled={scanning || !url.trim()}
-                  className="rounded-lg bg-accent-blue/90  text-sm font-semibold text-bg-primary transition-all hover:bg-accent-blue disabled:opacity-80 disabled:cursor-not-allowed flex items-center gap-2 h-[70%] px-2"
+                  className="rounded-lg bg-accent-blue/90 text-sm font-semibold text-bg-primary transition-all hover:bg-accent-blue disabled:opacity-80 disabled:cursor-not-allowed flex items-center gap-2 h-[70%] px-2 w-auto justify-center"
                 >
                   {scanning ? (
                     <Loader2 className="h-4 w-4 animate-spin" />
@@ -249,7 +249,7 @@ export default function Dashboard() {
                         {getStatusIcon(result.verdict)}
                       </div>
                       <div className="flex-1">
-                        <div className="flex items-center justify-between">
+                        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
                           <h3 className="font-semibold capitalize">
                             {result.verdict}
                           </h3>
@@ -277,73 +277,73 @@ export default function Dashboard() {
         </motion.div>
 
         {/* Stats Grid */}
-        <div className="flex flex-col gap-4 h-full w-[35%]">
+        <div className="flex flex-col sm:flex-row lg:flex-col gap-3 lg:gap-4 w-full lg:w-1/3 min-h-0">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.1 }}
-            className="h-1/3 bg-bg-card rounded-xl backdrop-blur-sm border-l-4 border-accent-blue flex-col gap-4 justify-center p-6"
+            className="flex-1 bg-bg-card rounded-xl backdrop-blur-sm border-l-4 border-accent-blue flex flex-col gap-4 justify-center p-4 sm:p-6 min-h-0"
           >
             <div className="w-full flex items-center justify-between text-accent-blue">
-              <RadarIcon />
+              <RadarIcon className="size-5" />
               <span className="text-xs font-semibold p-1 px-1.5 bg-accent-blue/20">
                 LAST 24H
               </span>
             </div>
-            <p className="text-4xl my-2 font-bold text-text-primary">
+            <p className="text-2xl sm:text-4xl my-2 font-bold text-text-primary">
               {stats.totalScans.toLocaleString()}
             </p>
-            <p className="text-sm text-muted uppercase">Total Scans</p>
+            <p className="text-xs sm:text-sm text-muted uppercase">Total Scans</p>
           </motion.div>
 
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.2 }}
-            className="h-1/3 bg-bg-card rounded-xl backdrop-blur-sm border-l-4 border-accent-rose flex-col gap-4 justify-center p-6"
+            className="flex-1 bg-bg-card rounded-xl backdrop-blur-sm border-l-4 border-accent-rose flex flex-col gap-4 justify-center p-4 sm:p-6 min-h-0"
           >
             <div className="w-full flex items-center justify-between text-accent-rose">
-              <BanIcon />
+              <BanIcon className="size-5" />
               <span className="text-xs font-semibold p-1 px-1.5 bg-accent-rose/20">
                 CRITICAL
               </span>
             </div>
-            <p className="text-4xl my-2 font-bold text-text-primary">
+            <p className="text-2xl sm:text-4xl my-2 font-bold text-text-primary">
               {stats.threatsBlocked}
             </p>
-            <p className="text-sm text-muted uppercase">Threats Blocked</p>
+            <p className="text-xs sm:text-sm text-muted uppercase">Threats Blocked</p>
           </motion.div>
 
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.3 }}
-            className="h-1/3 bg-bg-card rounded-xl backdrop-blur-sm border-l-4 border-accent-amber flex-col gap-4 justify-center p-6"
+            className="flex-1 bg-bg-card rounded-xl backdrop-blur-sm border-l-4 border-accent-amber flex flex-col gap-4 justify-center p-4 sm:p-6 min-h-0"
           >
             <div className="w-full flex items-center justify-between text-accent-amber">
-              <ClockFadingIcon />
+              <ClockFadingIcon className="size-5" />
               <span className="text-xs font-semibold p-1 px-1.5 bg-accent-amber/20">
                 UPTIME
               </span>
             </div>
-            <p className="text-4xl my-2 font-bold text-text-primary">
+            <p className="text-2xl sm:text-4xl my-2 font-bold text-text-primary">
               {stats.systemHealth}%
             </p>
-            <p className="text-sm text-muted uppercase">System Health</p>
+            <p className="text-xs sm:text-sm text-muted uppercase">System Health</p>
           </motion.div>
         </div>
       </section>
 
       {/* Recent Analysis */}
-      <section className="flex w-full items-center h-98 gap-6 ">
-        <div className="flex flex-col gap-4 h-full w-3/5">
-          <div className="flex items-center justify-between w-full">
-            <h2 className="text-xl font-semibold text-text-primary">
+      <section className="flex flex-col lg:flex-row w-full gap-6 lg:gap-6">
+        <div className="flex flex-col gap-4 w-full lg:w-3/5">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+            <h2 className="text-lg sm:text-xl font-semibold text-text-primary">
               Recent Scan Analysis
             </h2>
             <Link
               href="/logs"
-              className="text-xs font-semibold text-accent-blue hover:text-accent-blue/80"
+              className="text-xs font-semibold text-accent-blue hover:text-accent-blue/80 w-fit"
             >
               SEE FULL HISTORY
             </Link>
@@ -357,20 +357,20 @@ export default function Dashboard() {
                   initial={{ opacity: 0, x: -20 }}
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ delay: i * 0.1 }}
-                  className={`flex items-center gap-4 rounded-lg bg-bg-card p-4`}
+                  className={`flex items-center gap-3 sm:gap-4 rounded-lg bg-bg-card p-3 sm:p-4`}
                 >
-                  <div className="p-3 text-slate-400">
+                  <div className="p-2 sm:p-3 text-slate-400 flex-shrink-0">
                     {log.verdict === "unsafe" ? (
-                      <BanIcon className="h-5 w-5" />
+                      <BanIcon className="h-4 w-4 sm:h-5 sm:w-5" />
                     ) : log.verdict === "suspicious" ? (
-                      <AlertTriangle className="h-5 w-5" />
+                      <AlertTriangle className="h-4 w-4 sm:h-5 sm:w-5" />
                     ) : (
-                      <ShieldCheckIcon className="h-5 w-5" />
+                      <ShieldCheckIcon className="h-4 w-4 sm:h-5 sm:w-5" />
                     )}
                   </div>
 
                   <div className="flex-1 min-w-0">
-                    <h3 className="truncate font-semibold text-text-primary lowercase first-letter:uppercase">
+                    <h3 className="truncate font-semibold text-text-primary lowercase first-letter:uppercase text-sm sm:text-base">
                       {formatted.title}
                     </h3>
                     <p className="truncate text-xs text-text-muted">
@@ -379,7 +379,7 @@ export default function Dashboard() {
                   </div>
 
                   <div
-                    className={`rounded px-2 py-1 text-[10px] font-bold ${
+                    className={`rounded px-2 py-1 text-[10px] font-bold whitespace-nowrap ${
                       log.verdict === "unsafe"
                         ? "bg-danger/20 text-danger"
                         : log.verdict === "suspicious"
@@ -398,23 +398,23 @@ export default function Dashboard() {
             })}
           </div>
         </div>
-        <div className="w-2/5 h-full flex flex-col gap-4">
-          <div className="flex items-center justify-between w-full">
-            <h2 className="text-xl font-semibold text-text-primary">
+        <div className="w-full lg:w-2/5 flex flex-col gap-4">
+          <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
+            <h2 className="text-lg sm:text-xl font-semibold text-text-primary">
               Threat Trend Analysis
             </h2>
-            <div className="flex items-center gap-4 text-xs tracking-widest">
+            <div className="flex flex-wrap items-center gap-3 sm:gap-4 text-xs tracking-widest">
               <div className="flex items-center gap-2">
-                <span className="size-3 rounded-full bg-accent-blue" />
-                <span>NORMAL</span>
+                <span className="size-2 sm:size-3 rounded-full bg-accent-blue" />
+                <span className="text-xs">NORMAL</span>
               </div>
               <div className="flex items-center gap-2">
-                <span className="size-3 rounded-full bg-accent-rose" />
-                <span>SPIKE</span>
+                <span className="size-2 sm:size-3 rounded-full bg-accent-rose" />
+                <span className="text-xs">SPIKE</span>
               </div>
             </div>
           </div>
-          <div className="w-full h-full">
+          <div className="w-full h-[24rem] sm:h-[28rem] lg:h-full">
             <ThreatsBarChart />
           </div>
         </div>

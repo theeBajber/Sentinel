@@ -11,14 +11,14 @@ export default function Settings() {
   const [strictMode, setStrictMode] = useState(false);
 
   return (
-    <main className="min-h-screen p-6 w-full max-w-310">
-      <h1 className="mb-6 text-2xl font-bold text-text-primary">Settings</h1>
+    <main className="min-h-screen p-4 sm:p-6 max-w-4xl lg:max-w-310 mx-auto w-full">
+      <h1 className="mb-6 text-2xl sm:text-3xl font-bold text-text-primary">Settings</h1>
 
       <section className="mb-6">
         <h2 className="mb-3 text-xs font-semibold uppercase tracking-wider text-slate-500">
           Protection
         </h2>
-        <div className="rounded-2xl  bg-bg-card overflow-hidden">
+        <div className="rounded-2xl bg-bg-card overflow-hidden">
           <ToggleItem
             icon={<ShieldCheck className="h-5 w-5" />}
             title="Real-time Scanning"
@@ -59,16 +59,16 @@ export default function Settings() {
         <div className="rounded-2xl bg-bg-card overflow-hidden">
           <Link
             href="/settings/api-keys"
-            className="flex w-full items-center justify-between p-4 hover:bg-slate-800/50 transition-colors"
+            className="flex w-full items-center justify-between p-3 sm:p-4 hover:bg-slate-800/50 transition-colors"
           >
-            <div className="flex items-center gap-3">
-              <GlobeIcon className="h-5 w-5 text-slate-400" />
-              <div className="text-left">
-                <p className="font-medium text-text-primary">API Keys</p>
+            <div className="flex items-center gap-3 min-w-0">
+              <GlobeIcon className="h-5 w-5 text-slate-400 flex-shrink-0" />
+              <div className="text-left min-w-0">
+                <p className="font-medium text-text-primary text-sm sm:text-base">API Keys</p>
                 <p className="text-xs text-slate-500">Manage access tokens</p>
               </div>
             </div>
-            <ChevronRight className="h-5 w-5 text-slate-500" />
+            <ChevronRight className="h-5 w-5 text-slate-500 flex-shrink-0" />
           </Link>
         </div>
       </section>
@@ -95,17 +95,17 @@ function ToggleItem({
   onChange: (v: boolean) => void;
 }) {
   return (
-    <div className="flex items-center justify-between p-4">
-      <div className="flex items-center gap-3">
-        <div className="text-slate-400">{icon}</div>
-        <div>
-          <p className="font-medium text-text-primary">{title}</p>
+    <div className="flex items-center justify-between p-3 sm:p-4">
+      <div className="flex items-center gap-3 min-w-0">
+        <div className="text-slate-400 flex-shrink-0">{icon}</div>
+        <div className="min-w-0">
+          <p className="font-medium text-text-primary text-sm sm:text-base">{title}</p>
           <p className="text-xs text-slate-500">{description}</p>
         </div>
       </div>
       <button
         onClick={() => onChange(!enabled)}
-        className={`relative h-6 w-11 rounded-full transition-colors ${
+        className={`relative h-6 w-11 rounded-full transition-colors flex-shrink-0 ${
           enabled ? "bg-accent-blue" : "bg-slate-700"
         }`}
       >

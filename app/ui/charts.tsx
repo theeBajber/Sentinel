@@ -43,7 +43,7 @@ export default function ThreatsBarChart() {
   }, []);
 
   return (
-    <div className="w-full h-full bg-bg-card rounded-xl p-4">
+    <div className="w-full h-full min-h-[18rem] bg-bg-card rounded-xl p-4">
       {loading ? (
         <div className="w-full h-full flex items-center justify-center text-text-muted animate-pulse">
           Loading...

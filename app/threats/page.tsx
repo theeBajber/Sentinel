@@ -16,20 +16,6 @@ interface Threat {
   createdAt: string;
 }
 
-const COLORS = {
-  bgPrimary: "#0c1324",
-  bgCard: "#191f31",
-  bgHover: "#1c2337",
-  accentBlue: "#b7c4ff",
-  accentRose: "#ffb4ab",
-  accentAmber: "#dec29a",
-  textPrimary: "#dce1fb",
-  textMuted: "#c6c6cd",
-  danger: "#f2a7a0",
-  warning: "#e6c38a",
-  success: "#8fd4b2",
-};
-
 export default function Threats() {
   const { apiFetch } = useAuth();
   const [threats, setThreats] = useState<Threat[]>([]);
@@ -104,32 +90,30 @@ export default function Threats() {
     }
   };
 
-  const getSeverityStyle = (severity: string) => {
+  const getSeverityClasses = (severity: string) => {
     switch (severity) {
       case "critical":
-        return { bg: "#5c1a1a", text: "#ffb4ab", border: "#7f2a2a" };
+        return "bg-red-900/50 text-accent-rose border-red-700";
       case "high":
-        return { bg: "#4a1c1c", text: "#f2a7a0", border: "#5c2a2a" };
+        return "bg-red-800/50 text-danger border-red-600";
       case "medium":
-        return { bg: "#3d2d1a", text: "#dec29a", border: "#5c4528" };
+        return "bg-yellow-900/50 text-accent-amber border-yellow-700";
       default:
-        return { bg: "#1c2337", text: "#b7c4ff", border: "#2a3a5c" };
+        return "bg-blue-900/50 text-accent-blue border-blue-700";
     }
   };
 
   return (
-    <main className="min-h-screen w-full p-6 max-w-310 items-center">
+    <main className="min-h-screen w-full p-4 sm:p-6 max-w-4xl lg:max-w-310 mx-auto">
       {/* Header */}
       <div className="mb-8">
         <p
-          className="text-xs font-semibold tracking-widest uppercase mb-2"
-          style={{ color: COLORS.accentBlue }}
+          className="text-xs font-semibold tracking-widest uppercase mb-2 text-accent-blue"
         >
           Surveillance Module
         </p>
         <h1
-          className="text-4xl font-bold"
-          style={{ color: COLORS.textPrimary }}
+          className="text-2xl sm:text-4xl font-bold text-text-primary"
         >
           Threat Management
         </h1>
@@ -138,15 +122,13 @@ export default function Threats() {
       {/* Add Threat Form */}
       <form
         onSubmit={handleSubmit}
-        className="rounded-xl p-4 mb-6"
-        style={{ backgroundColor: COLORS.bgCard }}
+        className="rounded-xl p-4 sm:p-6 mb-6 bg-bg-card"
       >
-        <div className="grid grid-cols-12 gap-4 items-end">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-12 gap-3 sm:gap-4 items-end">
           {/* Pattern Input */}
-          <div className="col-span-4">
+          <div className="col-span-1 sm:col-span-2 lg:col-span-4">
             <label
-              className="block text-xs font-medium uppercase tracking-wider mb-2"
-              style={{ color: COLORS.textMuted }}
+              className="block text-xs font-medium uppercase tracking-wider mb-2 text-text-muted"
             >
               Pattern (Domain or Regex)
             </label>
@@ -157,14 +139,12 @@ export default function Threats() {
                 setFormData({ ...formData, pattern: e.target.value })
               }
               placeholder="e.g. example\.com"
-              className="w-full px-4 py-3 rounded-lg outline-none transition-all bg-bg-primary/50 text-text-primary border border-bg-hover"
-              onFocus={(e) => (e.target.style.borderColor = COLORS.accentBlue)}
-              onBlur={(e) => (e.target.style.borderColor = COLORS.bgHover)}
+              className="w-full px-3 sm:px-4 py-2 sm:py-3 rounded-lg outline-none transition-all bg-bg-primary/50 text-text-primary border border-bg-hover focus:border-accent-blue text-sm"
             />
           </div>
 
           {/* Regex Checkbox */}
-          <div className="col-span-1 flex items-center justify-center pb-3">
+          <div className="col-span-1 flex items-end justify-start sm:justify-center pb-0 sm:pb-0">
             <label className="flex items-center gap-2 cursor-pointer">
               <input
                 type="checkbox"
@@ -174,17 +154,16 @@ export default function Threats() {
                 }
                 className={`w-4 h-4 rounded cursor-pointer not-checked:appearance-none bg-bg-primary/50 accent-accent-blue`}
               />
-              <span className="text-sm" style={{ color: COLORS.textMuted }}>
+              <span className="text-xs sm:text-sm text-text-muted">
                 Regex
               </span>
             </label>
           </div>
 
           {/* Severity Dropdown */}
-          <div className="col-span-2">
+          <div className="col-span-1 sm:col-span-1 lg:col-span-2">
             <label
-              className="block text-xs font-medium uppercase tracking-wider mb-2"
-              style={{ color: COLORS.textMuted }}
+              className="block text-xs font-medium uppercase tracking-wider mb-2 text-text-muted"
             >
               Severity
             </label>
@@ -196,10 +175,7 @@ export default function Threats() {
                   severity: e.target.value as Threat["severity"],
                 })
               }
-              className="w-full px-4 py-3 rounded-lg appearance-none outline-none cursor-pointer text-text-primary border border-bg-hover"
-              style={{
-                backgroundColor: "#12192a",
-              }}
+              className="w-full px-3 sm:px-4 py-2 sm:py-3 rounded-lg appearance-none outline-none cursor-pointer text-text-primary border border-bg-hover bg-bg-primary text-sm"
             >
               <option value="critical">Critical</option>
               <option value="high">High</option>
@@ -209,10 +185,9 @@ export default function Threats() {
           </div>
 
           {/* Notes Input */}
-          <div className="col-span-3">
+          <div className="col-span-1 sm:col-span-2 lg:col-span-3">
             <label
-              className="block text-xs font-medium uppercase tracking-wider mb-2"
-              style={{ color: COLORS.textMuted }}
+              className="block text-xs font-medium uppercase tracking-wider mb-2 text-text-muted"
             >
               Notes
             </label>
@@ -223,21 +198,15 @@ export default function Threats() {
                 setFormData({ ...formData, notes: e.target.value })
               }
               placeholder="Add context..."
-              className="w-full px-4 py-3 rounded-lg outline-none transition-all bg-bg-primary/50 text-text-primary border border-bg-hover"
-              onFocus={(e) => (e.target.style.borderColor = COLORS.accentBlue)}
-              onBlur={(e) => (e.target.style.borderColor = COLORS.bgHover)}
+              className="w-full px-3 sm:px-4 py-2 sm:py-3 rounded-lg outline-none transition-all bg-bg-primary/50 text-text-primary border border-bg-hover focus:border-accent-blue text-sm"
             />
           </div>
 
           {/* Add Button */}
-          <div className="col-span-2">
+          <div className="col-span-1 sm:col-span-2 lg:col-span-2">
             <button
               type="submit"
-              className="w-full py-3 px-6 rounded-lg font-semibold transition-all hover:opacity-90"
-              style={{
-                backgroundColor: COLORS.accentBlue,
-                color: COLORS.bgPrimary,
-              }}
+              className="w-full py-2 sm:py-3 px-4 sm:px-6 rounded-lg font-semibold transition-all hover:opacity-90 text-sm bg-accent-blue text-bg-primary"
             >
               Add
             </button>
@@ -245,18 +214,13 @@ export default function Threats() {
         </div>
       </form>
 
-      {/* Threats Table */}
+      {/* Threats Table - Desktop View */}
       <div
-        className="rounded-xl overflow-hidden"
-        style={{ backgroundColor: COLORS.bgCard }}
+        className="rounded-xl overflow-hidden hidden sm:block bg-bg-card"
       >
         {/* Table Header */}
         <div
-          className="grid grid-cols-12 gap-4 px-6 py-4 text-xs font-semibold uppercase tracking-wider"
-          style={{
-            color: COLORS.accentBlue,
-            borderBottom: `1px solid ${COLORS.bgHover}`,
-          }}
+          className="grid grid-cols-12 gap-4 px-4 sm:px-6 py-4 text-xs font-semibold uppercase tracking-wider text-accent-blue border-b border-bg-hover"
         >
           <div className="col-span-4">Pattern</div>
           <div className="col-span-1 text-center">Regex</div>
@@ -268,38 +232,32 @@ export default function Threats() {
         {/* Table Body */}
         {loading ? (
           <div
-            className="px-6 py-12 text-center"
-            style={{ color: COLORS.textMuted }}
+            className="px-4 sm:px-6 py-12 text-center text-sm text-text-muted"
           >
             Loading threats...
           </div>
         ) : threats.length === 0 ? (
           <div
-            className="px-6 py-12 text-center"
-            style={{ color: COLORS.textMuted }}
+            className="px-4 sm:px-6 py-12 text-center text-sm text-text-muted"
           >
             No threat patterns defined yet
           </div>
         ) : (
           threats.map((threat, index) => {
-            const severityStyle = getSeverityStyle(threat.severity);
+            const severityClasses = getSeverityClasses(threat.severity);
             return (
               <motion.div
                 key={threat.id}
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: index * 0.05 }}
-                className="grid grid-cols-12 gap-4 px-6 py-4 items-center"
-                style={{
-                  borderBottom: `1px solid ${COLORS.bgHover}`,
-                  backgroundColor:
-                    index % 2 === 0 ? "transparent" : "rgba(28, 35, 55, 0.3)",
-                }}
+                className={`grid grid-cols-12 gap-4 px-4 sm:px-6 py-4 items-center text-sm border-b border-bg-hover ${
+                  index % 2 === 0 ? "" : "bg-bg-hover/30"
+                }`}
               >
                 {/* Pattern */}
                 <div
-                  className="col-span-4 font-mono text-sm truncate"
-                  style={{ color: COLORS.textPrimary }}
+                  className="col-span-4 font-mono truncate text-text-primary"
                 >
                   {threat.pattern}
                 </div>
@@ -307,19 +265,14 @@ export default function Threats() {
                 {/* Regex Checkmark */}
                 <div className="col-span-1 text-center">
                   {threat.isRegex && (
-                    <span style={{ color: COLORS.accentBlue }}>✓</span>
+                    <span className="text-accent-blue">✓</span>
                   )}
                 </div>
 
                 {/* Severity Badge */}
                 <div className="col-span-2">
                   <span
-                    className="inline-block px-3 py-1 rounded text-xs font-bold uppercase"
-                    style={{
-                      backgroundColor: severityStyle.bg,
-                      color: severityStyle.text,
-                      border: `1px solid ${severityStyle.border}`,
-                    }}
+                    className={`inline-block px-2 sm:px-3 py-1 rounded text-xs font-bold uppercase ${severityClasses}`}
                   >
                     {threat.severity}
                   </span>
@@ -327,8 +280,7 @@ export default function Threats() {
 
                 {/* Notes */}
                 <div
-                  className="col-span-4 text-sm truncate"
-                  style={{ color: COLORS.textMuted }}
+                  className="col-span-4 truncate text-text-muted"
                 >
                   {threat.notes || "—"}
                 </div>
@@ -337,11 +289,7 @@ export default function Threats() {
                 <div className="col-span-1 text-right">
                   <button
                     onClick={() => handleDelete(threat.id)}
-                    className="px-3 py-1 rounded text-xs font-medium transition-all hover:opacity-80"
-                    style={{
-                      backgroundColor: "transparent",
-                      color: COLORS.danger,
-                    }}
+                    className="px-2 py-1 rounded text-xs font-medium transition-all hover:opacity-80 text-danger bg-transparent"
                   >
                     <Trash2 className="size-4" />
                   </button>
@@ -352,15 +300,83 @@ export default function Threats() {
         )}
       </div>
 
+      {/* Threats Table - Mobile View (Card Layout) */}
+      <div className="block sm:hidden space-y-3">
+        {loading ? (
+          <div
+            className="px-4 py-12 text-center text-sm rounded-xl text-text-muted bg-bg-card"
+          >
+            Loading threats...
+          </div>
+        ) : threats.length === 0 ? (
+          <div
+            className="px-4 py-12 text-center text-sm rounded-xl text-text-muted bg-bg-card"
+          >
+            No threat patterns defined yet
+          </div>
+        ) : (
+          threats.map((threat, index) => {
+            const severityClasses = getSeverityClasses(threat.severity);
+            return (
+              <motion.div
+                key={threat.id}
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: index * 0.05 }}
+                className="p-4 rounded-lg bg-bg-card border border-bg-hover"
+              >
+                <div className="space-y-3">
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="flex-1">
+                      <p className="text-xs uppercase tracking-wider text-accent-blue">Pattern</p>
+                      <p className="font-mono text-sm truncate mt-1 text-text-primary">
+                        {threat.pattern}
+                      </p>
+                    </div>
+                    <button
+                      onClick={() => handleDelete(threat.id)}
+                      className="p-2 rounded transition-all hover:opacity-80 flex-shrink-0 text-danger bg-transparent"
+                    >
+                      <Trash2 className="size-4" />
+                    </button>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <p className="text-xs uppercase tracking-wider text-accent-blue">Severity</p>
+                      <span
+                        className={`inline-block px-2 py-1 rounded text-xs font-bold uppercase mt-1 ${severityClasses}`}
+                      >
+                        {threat.severity}
+                      </span>
+                    </div>
+                    <div>
+                      <p className="text-xs uppercase tracking-wider text-accent-blue">Regex</p>
+                      <p className={`mt-1 ${threat.isRegex ? "text-accent-blue" : "text-text-muted"}`}>
+                        {threat.isRegex ? "✓ Yes" : "— No"}
+                      </p>
+                    </div>
+                  </div>
+
+                  {threat.notes && (
+                    <div>
+                      <p className="text-xs uppercase tracking-wider text-accent-blue">Notes</p>
+                      <p className="text-sm mt-1 truncate text-text-muted">
+                        {threat.notes}
+                      </p>
+                    </div>
+                  )}
+                </div>
+              </motion.div>
+            );
+          })
+        )}
+      </div>
+
       {/* Reload Button */}
       <button
         onClick={fetchThreats}
-        className="mt-6 flex items-center justify-center gap-2 mx-auto px-6 py-3 rounded-lg text-sm font-medium transition-all hover:opacity-80"
-        style={{
-          backgroundColor: "transparent",
-          color: COLORS.textMuted,
-          border: `1px solid ${COLORS.bgHover}`,
-        }}
+        className="mt-6 flex items-center justify-center gap-2 mx-auto px-4 sm:px-6 py-2 sm:py-3 rounded-lg text-sm font-medium transition-all hover:opacity-80 text-text-muted bg-transparent border border-bg-hover"
       >
         <RefreshCw className="w-4 h-4" />
         Reload Threat Rules
