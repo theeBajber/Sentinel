@@ -53,7 +53,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     if (loading) return;
 
-    const isPublicPage = pathname === "/login" || pathname === "/signup";
+    const isPublicPage = pathname === "/login" || pathname === "/register";
 
     if (!isAuthenticated && !isPublicPage) {
       router.push("/login");
@@ -81,6 +81,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const logout = () => {
+    console.log('Logout function called');
     localStorage.removeItem("token");
     localStorage.removeItem("email");
     localStorage.removeItem("userId");
@@ -114,9 +115,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-bg-muted">
+      <div className="min-h-screen flex items-center justify-center bg-slate-900">
         <div className="flex flex-col items-center gap-4">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-accent-blue"></div>
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-400"></div>
           <span className="text-sm text-slate-400 uppercase tracking-wider">
             Verifying Credentials...
           </span>

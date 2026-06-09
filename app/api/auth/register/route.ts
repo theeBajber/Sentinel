@@ -1,4 +1,3 @@
-// app/api/auth/route.ts
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import bcrypt from "bcryptjs";
@@ -9,34 +8,42 @@ const JWT_SECRET = process.env.JWT_SECRET || "your-secret-key";
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { email, password } = body;
-    console.log("Login attempt:", email);
+    const { email, password, name } = body;
 
-    if (!email || !password) {
+    if (!email || !password || !name) {
       return NextResponse.json(
-        { error: "Email and password required" },
+        { error: "Email, password, and name required" },
         { status: 400 },
       );
     }
-    const user = await prisma.user.findUnique({
-      where: { email: email.toLowerCase() },
-    });
-    console.log("User found:", user ? "yes" : "no");
-    if (!user) {
+
+    if (password.length < 8) {
       return NextResponse.json(
-        { error: "Invalid credentials" },
-        { status: 401 },
+        { error: "Password must be at least 8 characters" },
+        { status: 400 },
       );
     }
 
-    const valid = await bcrypt.compare(password, user.password);
-    console.log("Password valid:", valid);
-    if (!valid) {
+    const existingUser = await prisma.user.findUnique({
+      where: { email: email.toLowerCase() },
+    });
+
+    if (existingUser) {
       return NextResponse.json(
-        { error: "Invalid credentials" },
-        { status: 401 },
+        { error: "Email already registered" },
+        { status: 409 },
       );
     }
+
+    const passwordHash = await bcrypt.hash(password, 12);
+
+    const user = await prisma.user.create({
+      data: {
+        email: email.toLowerCase(),
+        password: passwordHash,
+        name,
+      },
+    });
 
     const token = jwt.sign({ sub: user.id, email: user.email }, JWT_SECRET, {
       expiresIn: "7d",
@@ -49,9 +56,9 @@ export async function POST(req: NextRequest) {
       name: user.name,
     });
   } catch (error) {
-    console.error("Login error:", error);
+    console.error("Registration error:", error);
     return NextResponse.json(
-      { error: "Authentication failed" },
+      { error: "Registration failed" },
       { status: 500 },
     );
   }

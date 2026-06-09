@@ -1,14 +1,16 @@
 "use client";
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { Shield, Lock, Mail, ArrowRight, AlertCircle } from "lucide-react";
+import { Shield, Lock, Mail, User, ArrowRight, AlertCircle } from "lucide-react";
 import Link from "next/link";
 import { useAuth } from "@/lib/auth-context";
 
-export default function Login() {
+export default function Register() {
   const { login } = useAuth();
+  const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
@@ -17,11 +19,23 @@ export default function Login() {
     setLoading(true);
     setError("");
 
+    if (password !== confirmPassword) {
+      setError("Passcodes do not match");
+      setLoading(false);
+      return;
+    }
+
+    if (password.length < 8) {
+      setError("Passcode must be at least 8 characters");
+      setLoading(false);
+      return;
+    }
+
     try {
-      const res = await fetch("/api/auth", {
+      const res = await fetch("/api/auth/register", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password }),
+        body: JSON.stringify({ name, email, password }),
       });
 
       if (res.ok) {
@@ -29,9 +43,9 @@ export default function Login() {
         login(data.token, data.email, data.userId, data.name);
       } else {
         const data = await res.json();
-        setError(data.error || "Authentication failed");
+        setError(data.error || "Registration failed");
       }
-    } catch (error) {
+    } catch {
       setError("Network error. Please try again.");
     } finally {
       setLoading(false);
@@ -51,7 +65,7 @@ export default function Login() {
           </div>
           <h1 className="text-2xl font-bold text-accent-blue">SENTINEL</h1>
           <p className="mt-2 text-sm text-slate-400 uppercase tracking-widest">
-            Enter the Digital Bastion
+            Create Operative Account
           </p>
         </div>
 
@@ -65,6 +79,23 @@ export default function Login() {
               <span>{error}</span>
             </div>
           )}
+
+          <div>
+            <label className="mb-2 block text-xs font-medium text-slate-400 uppercase tracking-wider">
+              Call Sign
+            </label>
+            <div className="relative">
+              <User className="absolute left-4 top-3.5 h-5 w-5 text-slate-500" />
+              <input
+                type="text"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                placeholder="Agent Smith"
+                className="w-full rounded-xl border border-slate-700 bg-slate-800/50 py-3 pl-12 pr-4 text-white placeholder-slate-600 focus:border-accent-blue focus:outline-none"
+                required
+              />
+            </div>
+          </div>
 
           <div>
             <label className="mb-2 block text-xs font-medium text-slate-400 uppercase tracking-wider">
@@ -84,23 +115,32 @@ export default function Login() {
           </div>
 
           <div>
-            <div className="mb-2 flex items-center justify-between">
-              <label className="text-xs font-medium text-slate-400 uppercase tracking-wider">
-                Passcode
-              </label>
-              <Link
-                href="#"
-                className="text-xs text-accent-rose hover:text-accent-rose/80"
-              >
-                Forgot Access?
-              </Link>
-            </div>
+            <label className="mb-2 block text-xs font-medium text-slate-400 uppercase tracking-wider">
+              Passcode
+            </label>
             <div className="relative">
               <Lock className="absolute left-4 top-3.5 h-5 w-5 text-slate-500" />
               <input
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
+                placeholder="••••••••"
+                className="w-full rounded-xl border border-slate-700 bg-slate-800/50 py-3 pl-12 pr-4 text-white placeholder-slate-600 focus:border-accent-blue focus:outline-none"
+                required
+              />
+            </div>
+          </div>
+
+          <div>
+            <label className="mb-2 block text-xs font-medium text-slate-400 uppercase tracking-wider">
+              Confirm Passcode
+            </label>
+            <div className="relative">
+              <Lock className="absolute left-4 top-3.5 h-5 w-5 text-slate-500" />
+              <input
+                type="password"
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
                 placeholder="••••••••"
                 className="w-full rounded-xl border border-slate-700 bg-slate-800/50 py-3 pl-12 pr-4 text-white placeholder-slate-600 focus:border-accent-blue focus:outline-none"
                 required
@@ -117,19 +157,19 @@ export default function Login() {
               "Initializing..."
             ) : (
               <>
-                Login
+                Register
                 <ArrowRight className="h-4 w-4" />
               </>
             )}
           </button>
 
           <p className="text-center text-sm text-slate-500">
-            New operative?{" "}
+            Already have credentials?{" "}
             <Link
-              href="/register"
+              href="/login"
               className="text-accent-blue hover:text-accent-blue/80 font-semibold"
             >
-              Create Account
+              Sign In
             </Link>
           </p>
         </form>
