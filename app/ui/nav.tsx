@@ -39,17 +39,10 @@ export function Nav() {
   const isActive = (path: string) => pathName === path;
 
   const handleLogout = () => {
-    console.log('Nav logout clicked');
-    logout();
     setUserMenuOpen(false);
+    logout();
   };
 
-  const handleLogoutClick = (e: React.MouseEvent) => {
-    console.log('Logout button clicked');
-    e.stopPropagation();
-    e.preventDefault();
-    handleLogout();
-  };
 
   return (
     <nav className="w-full flex items-center bg-slate-900 justify-between h-16 px-4 md:px-6 relative">
@@ -87,7 +80,14 @@ export function Nav() {
                 <p className="text-sm text-white font-medium">{email}</p>
               </div>
               <button
-                onClick={handleLogoutClick}
+                onMouseDown={(e) => {
+                  e.preventDefault();
+    console.log('mousedown fired');
+                  console.log('1. Button clicked');
+                  console.log('2. logout function:', typeof logout);
+                      handleLogout()
+                    console.log('3. After logout()');
+                  }}
                 className="w-full flex items-center gap-3 px-4 py-3 text-sm text-white hover:bg-slate-800 transition-colors rounded-b-lg"
                 type="button"
               >
@@ -117,7 +117,7 @@ export function Nav() {
                 <p className="text-sm text-white font-medium">{email}</p>
               </div>
               <button
-                onClick={handleLogoutClick}
+                onClick={handleLogout}
                 className="w-full flex items-center gap-3 px-4 py-3 text-sm text-white hover:bg-slate-800 transition-colors rounded-b-lg"
                 type="button"
               >
